@@ -21,31 +21,41 @@ async function fakeUpstream() {
 
 function mockDeviceAuth() {
   return {
-    status: () => ({ credentialCount: 1 }),
-    consumeEntryTicket: (req) => new URL(req.url, 'https://example.invalid').searchParams.get('pocket-entry') === 'valid',
-    authorizeRequest: (req) => String(req.headers.cookie ?? '').includes('approved=yes') ? { credentialId: 'device-1' } : null,
+    status: () => ({ deviceCount: 1 }),
+    hasApprovedDevice: (req) => String(req.headers.cookie ?? '').includes('device=yes'),
+    authorizeRequest: (req) => String(req.headers.cookie ?? '').includes('approved=yes') ? { deviceId: 'device-1' } : null,
     handleHttp: async () => false,
   };
 }
 
-test('安全代理默认只监听 loopback，顶层页面必须消费单次入口票据', async () => {
+test('安全代理默认只监听 loopback，顶层页面复用有效短会话', async () => {
   const upstream = await fakeUpstream();
   const proxy = await createPocketProxy({ port: 0, upstream: { host: '127.0.0.1', port: upstream.port }, deviceAuth: mockDeviceAuth() });
   try {
     assert.equal(proxy.server.address().address, '127.0.0.1');
 
-    const login = await fetch(`http://127.0.0.1:${proxy.port}/`, { headers: { accept: 'text/html' } });
-    assert.equal(login.status, 200);
-    assert.match(login.headers.get('content-security-policy') ?? '', /frame-ancestors 'none'/);
-    assert.equal(login.headers.get('x-frame-options'), 'DENY');
-    assert.match(await login.text(), /使用本机身份确认/);
+    const unpaired = await fetch(`http://127.0.0.1:${proxy.port}/`, { headers: { accept: 'text/html' } });
+    assert.equal(unpaired.status, 200);
+    assert.match(unpaired.headers.get('content-security-policy') ?? '', /frame-ancestors 'none'/);
+    assert.equal(unpaired.headers.get('x-frame-options'), 'DENY');
+    const unpairedHtml = await unpaired.text();
+    assert.match(unpairedHtml, /此浏览器尚未配对/);
+    assert.match(unpairedHtml, /\/pocket-auth\/auth-v2\.js/);
+    assert.doesNotMatch(unpairedHtml, /\/pocket-auth\/client\.js/);
     assert.equal(upstream.seen.length, 0, '未登录导航不得到达 DSH');
 
-    const entered = await fetch(`http://127.0.0.1:${proxy.port}/?pocket-entry=valid`, { headers: { accept: 'text/html' } });
+    const paired = await fetch(`http://127.0.0.1:${proxy.port}/`, { headers: { accept: 'text/html', cookie: 'device=yes' } });
+    assert.match(await paired.text(), /输入 Pocket 设备密码/);
+    assert.equal(upstream.seen.length, 0);
+
+    const entered = await fetch(`http://127.0.0.1:${proxy.port}/`, { headers: { accept: 'text/html', cookie: 'approved=yes' } });
     assert.equal(entered.status, 200);
     assert.match(await entered.text(), /data-dsh-pocket-session-guard/);
     assert.equal(upstream.seen.length, 1);
-    assert.equal(upstream.seen[0], '/', '单次入口票据不得进入 DSH 上游或其日志');
+
+    const refreshed = await fetch(`http://127.0.0.1:${proxy.port}/`, { headers: { accept: 'text/html', cookie: 'approved=yes' } });
+    assert.equal(refreshed.status, 200);
+    assert.equal(upstream.seen.length, 2, '有效短会话刷新时不应重复登录');
   } finally {
     await proxy.close();
     await new Promise((resolve) => upstream.server.close(resolve));
@@ -87,9 +97,11 @@ test('配对页面可公开打开，但不会直接授予 DSH 访问权', async 
   const upstream = await fakeUpstream();
   const proxy = await createPocketProxy({ port: 0, upstream: { host: '127.0.0.1', port: upstream.port }, deviceAuth: mockDeviceAuth() });
   try {
+    const client = await fetch(`http://127.0.0.1:${proxy.port}/pocket-auth/auth-v2.js`);
+    assert.equal(client.headers.get('cache-control'), 'no-store', '升级后不能复用旧 Passkey 脚本缓存');
     const response = await fetch(`http://127.0.0.1:${proxy.port}/pocket-pair#pair=test`);
     assert.equal(response.status, 200);
-    assert.match(await response.text(), /二维码不能单独授予访问权限/);
+    assert.match(await response.text(), /二维码和密码都不能单独授予访问权限/);
     assert.equal(upstream.seen.length, 0);
   } finally {
     await proxy.close();

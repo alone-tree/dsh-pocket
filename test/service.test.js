@@ -30,7 +30,7 @@ function baseInternals(overrides = {}) {
 
 test('service 只创建 loopback 代理并传入设备白名单', async () => {
   let captured = null;
-  const deviceAuth = { status: () => ({ credentialCount: 0 }) };
+  const deviceAuth = { status: () => ({ deviceCount: 0 }) };
   const service = createPocketService({
     dshPort: 3080,
     port: 3081,
@@ -42,7 +42,7 @@ test('service 只创建 loopback 代理并传入设备白名单', async () => {
   assert.equal(captured.deviceAuth, deviceAuth);
   const status = await service.status();
   assert.equal(status.proxyPort, 3081);
-  assert.equal(status.deviceAuth.credentialCount, 0);
+  assert.equal(status.deviceAuth.deviceCount, 0);
   assert.equal('lanUrl' in status, false);
   await service.dispose();
 });
@@ -108,11 +108,11 @@ test('RPC 支持生成配对、批准、拒绝和撤销设备', async () => {
   const connection = fakeConnection();
   const actions = [];
   const deviceAuth = {
-    status: () => ({ credentialCount: 1, credentials: [], pending: [] }),
+    status: () => ({ deviceCount: 1, devices: [], pending: [] }),
     beginPairing: () => ({ id: 'pair-1', url: 'https://work.example.com/pocket-pair#pair=x', expiresAt: Date.now() + 1000 }),
     approvePending: async (id) => actions.push(`approve:${id}`),
     rejectPending: (id) => actions.push(`reject:${id}`),
-    revokeCredential: async (id) => actions.push(`revoke:${id}`),
+    revokeDevice: async (id) => actions.push(`revoke:${id}`),
   };
   const service = {
     status: async () => ({ proxyRunning: true, tunnelConfig: { mode: 'named', hostname: 'work.example.com', tokenSet: true }, deviceAuth: deviceAuth.status() }),

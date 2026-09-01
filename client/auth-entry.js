@@ -1,14 +1,9 @@
-import {
-  browserSupportsWebAuthn,
-  startAuthentication,
-  startRegistration,
-} from '@simplewebauthn/browser';
-
 const $ = (id) => document.getElementById(id);
 
 async function request(path, init = {}) {
   const response = await fetch(path, {
     ...init,
+    credentials: 'same-origin',
     headers: { 'content-type': 'application/json', ...(init.headers ?? {}) },
     cache: 'no-store',
   });
@@ -24,6 +19,11 @@ function showError(error) {
   box.hidden = false;
 }
 
+function clearError() {
+  const box = $('error');
+  if (box) box.hidden = true;
+}
+
 function setBusy(button, busy, text) {
   if (!button) return;
   if (!button.dataset.idleText) button.dataset.idleText = button.textContent;
@@ -31,20 +31,24 @@ function setBusy(button, busy, text) {
   button.textContent = busy ? text : button.dataset.idleText;
 }
 
-async function login() {
+async function login(event) {
+  event.preventDefault();
   const button = $('login-button');
+  const password = String($('login-password')?.value ?? '');
+  if (password.length < 6) return showError(new Error('请输入至少 6 个字符的设备密码'));
   try {
-    setBusy(button, true, '等待手机确认…');
-    const { requestId, options } = await request('/pocket-auth/options');
-    const response = await startAuthentication({ optionsJSON: options });
-    const result = await request('/pocket-auth/verify', {
+    clearError();
+    setBusy(button, true, '正在验证…');
+    const result = await request('/pocket-auth/login', {
       method: 'POST',
-      body: JSON.stringify({ requestId, response }),
+      body: JSON.stringify({ password }),
     });
     location.replace(result.redirect || '/');
   } catch (error) {
     showError(error);
     setBusy(button, false, '');
+    const input = $('login-password');
+    if (input) { input.value = ''; input.focus(); }
   }
 }
 
@@ -52,20 +56,20 @@ async function pair(event) {
   event.preventDefault();
   const button = $('pair-button');
   const name = String($('device-name')?.value ?? '').trim();
+  const password = String($('device-password')?.value ?? '');
+  const confirmation = String($('device-password-confirm')?.value ?? '');
   const token = new URLSearchParams(location.hash.slice(1)).get('pair');
   if (!token) return showError(new Error('配对链接无效或已经失效'));
   if (!name) return showError(new Error('请填写设备名称'));
+  if (password.length < 6) return showError(new Error('设备密码至少需要 6 个字符'));
+  if (password !== confirmation) return showError(new Error('两次输入的设备密码不一致'));
 
   try {
-    setBusy(button, true, '等待手机确认…');
-    const { options } = await request('/pocket-pair/options', {
+    clearError();
+    setBusy(button, true, '正在提交…');
+    await request('/pocket-pair/submit', {
       method: 'POST',
-      body: JSON.stringify({ token, name }),
-    });
-    const response = await startRegistration({ optionsJSON: options });
-    await request('/pocket-pair/verify', {
-      method: 'POST',
-      body: JSON.stringify({ token, response }),
+      body: JSON.stringify({ token, name, password }),
     });
     $('pair-form').hidden = true;
     $('pair-complete').hidden = false;
@@ -77,12 +81,7 @@ async function pair(event) {
 }
 
 function boot() {
-  if (!browserSupportsWebAuthn()) {
-    showError(new Error('当前浏览器不支持手机身份验证，请使用最新版 Safari、Chrome 或 Edge'));
-    document.querySelectorAll('button').forEach((button) => { button.disabled = true; });
-    return;
-  }
-  $('login-button')?.addEventListener('click', login);
+  $('login-form')?.addEventListener('submit', login);
   $('pair-form')?.addEventListener('submit', pair);
 }
 

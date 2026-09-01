@@ -61,7 +61,7 @@ export function redactStatus(s) {
     tunnelQr: s?.tunnelQr ?? null,
     tunnelState: s?.tunnelState ?? { phase: 'idle' },
     tunnelConfig: s?.tunnelConfig ?? { mode: 'named', hostname: '', tokenSet: false },
-    deviceAuth: s?.deviceAuth ?? { configured: false, credentialCount: 0, credentials: [], pending: [] },
+    deviceAuth: s?.deviceAuth ?? { configured: false, deviceCount: 0, devices: [], pending: [] },
     dshPort: s?.dshPort ?? null,
   };
 }

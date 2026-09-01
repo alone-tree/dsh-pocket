@@ -65,7 +65,7 @@ function redactStatus(s) {
     tunnelQr: s?.tunnelQr ?? null,
     tunnelState: s?.tunnelState ?? { phase: "idle" },
     tunnelConfig: s?.tunnelConfig ?? { mode: "named", hostname: "", tokenSet: false },
-    deviceAuth: s?.deviceAuth ?? { configured: false, credentialCount: 0, credentials: [], pending: [] },
+    deviceAuth: s?.deviceAuth ?? { configured: false, deviceCount: 0, devices: [], pending: [] },
     dshPort: s?.dshPort ?? null
   };
 }
@@ -1921,7 +1921,7 @@ function PocketSettingsTab({ rpcCall }) {
       setBusy("");
     }
   };
-  const deviceState = status?.deviceAuth || { credentials: [], pending: [], credentialCount: 0 };
+  const deviceState = status?.deviceAuth || { devices: [], pending: [], deviceCount: 0 };
   const configured = Boolean(status?.tunnelConfig?.hostname && status?.tunnelConfig?.tokenSet);
   const isRemote = (0, import_react2.useMemo)(() => {
     try {
@@ -1958,7 +1958,7 @@ function PocketSettingsTab({ rpcCall }) {
   const startPairing = () => run("pair", async () => {
     const value = await call(POCKET_ENDPOINTS.devicePairingStart);
     setPairing(value);
-    setMessage("\u8BF7\u7528\u624B\u673A\u626B\u7801\uFF0C\u5B8C\u6210\u540E\u56DE\u5230\u8FD9\u91CC\u6279\u51C6");
+    setMessage("\u8BF7\u7528\u76EE\u6807\u624B\u673A\u6D4F\u89C8\u5668\u626B\u7801\u5E76\u8BBE\u7F6E\u8BBE\u5907\u5BC6\u7801\uFF0C\u7136\u540E\u56DE\u5230\u8FD9\u91CC\u6279\u51C6");
   });
   const approve = (id) => run(`approve:${id}`, async () => {
     setStatus(await call(POCKET_ENDPOINTS.deviceApprove, { id }));
@@ -2002,7 +2002,7 @@ function PocketSettingsTab({ rpcCall }) {
       "section",
       { style: styles.card },
       (0, import_react2.createElement)("div", { style: styles.title }, "\u5141\u8BB8\u8BBF\u95EE\u7684\u8BBE\u5907"),
-      (0, import_react2.createElement)("p", { style: styles.muted }, "\u65B0\u589E\u8BBE\u5907\u5FC5\u987B\u540C\u65F6\u64CD\u4F5C\u8FD9\u53F0\u7535\u8111\u548C\u624B\u673A\u3002\u624B\u673A\u626B\u7801\u786E\u8BA4\u540E\uFF0C\u8FD8\u8981\u5728\u7535\u8111\u4E0A\u6279\u51C6\u3002"),
+      (0, import_react2.createElement)("p", { style: styles.muted }, "\u65B0\u589E\u8BBE\u5907\u5FC5\u987B\u540C\u65F6\u64CD\u4F5C\u8FD9\u53F0\u7535\u8111\u548C\u76EE\u6807\u624B\u673A\u6D4F\u89C8\u5668\u3002\u624B\u673A\u8BBE\u7F6E\u72EC\u7ACB\u5BC6\u7801\u5E76\u63D0\u4EA4\u540E\uFF0C\u8FD8\u8981\u5728\u7535\u8111\u4E0A\u6279\u51C6\u3002"),
       (0, import_react2.createElement)(
         "div",
         { style: { ...styles.row, marginTop: 14 } },
@@ -2039,17 +2039,17 @@ function PocketSettingsTab({ rpcCall }) {
       (0, import_react2.createElement)(
         "div",
         { style: { marginTop: 12 } },
-        deviceState.credentials?.length ? deviceState.credentials.map((device) => (0, import_react2.createElement)(
+        deviceState.devices?.length ? deviceState.devices.map((device) => (0, import_react2.createElement)(
           "div",
           { key: device.id, style: styles.item },
           (0, import_react2.createElement)(
             "div",
             null,
             (0, import_react2.createElement)("div", { style: { fontSize: 13, fontWeight: 600 } }, device.name),
-            (0, import_react2.createElement)("div", { style: styles.muted }, `\u6700\u8FD1\u4F7F\u7528\uFF1A${formatTime(device.lastUsedAt)}${device.backedUp ? " \xB7 \u53EF\u540C\u6B65\u5230\u672C\u4EBA\u5176\u4ED6\u8BBE\u5907" : ""}`)
+            (0, import_react2.createElement)("div", { style: styles.muted }, `\u6700\u8FD1\u4F7F\u7528\uFF1A${formatTime(device.lastUsedAt)}`)
           ),
           (0, import_react2.createElement)("button", { style: styles.danger, onClick: () => revoke(device.id, device.name), disabled: Boolean(busy) }, "\u79FB\u9664")
-        )) : (0, import_react2.createElement)("div", { style: styles.muted }, "\u5C1A\u672A\u6279\u51C6\u4EFB\u4F55\u8BBE\u5907\u3002\u516C\u7F51\u5165\u53E3\u53EA\u4F1A\u663E\u793A\u201C\u7B49\u5F85\u7535\u8111\u6279\u51C6\u8BBE\u5907\u201D\uFF0C\u4E0D\u4F1A\u66B4\u9732 DSH\u3002")
+        )) : (0, import_react2.createElement)("div", { style: styles.muted }, "\u5C1A\u672A\u6279\u51C6\u4EFB\u4F55\u8BBE\u5907\u3002\u516C\u7F51\u5165\u53E3\u4E0D\u4F1A\u66B4\u9732 DSH\u3002")
       )
     ),
     error ? (0, import_react2.createElement)("div", { style: styles.error }, error) : null,

@@ -1,12 +1,14 @@
 # 未发布：安全架构改造
 
 - 公网入口改为固定 HTTPS Cloudflare Named Tunnel，代理只监听 `127.0.0.1`。
-- 新增 Passkey/WebAuthn 设备白名单、一次性配对二维码和电脑本机批准流程。
-- 每次顶层页面打开或刷新重新验证；前台续期，后台 10 分钟失效。
-- 新增设备命名、撤销和内存会话失效。
-- 删除 LAN、PIN、`?token=`、Quick Tunnel、无认证 CLI 和第三方镜像自动下载。
-- cloudflared 缺失时自动从 Cloudflare 官方 GitHub Releases 下载，并以官方 SHA-256 摘要校验（无第三方镜像回退）。
-- 新增安全模型、真实设备验收清单及对应自动测试。
+- 新增“浏览器随机设备凭据＋每设备独立密码＋电脑本机批准”的认证流程，不依赖 WebAuthn、Google 服务、短信、邮箱或手机 App。
+- 设备 token 只保存 SHA-256 哈希并在完整登录后轮换；密码使用 Argon2id `m=19456, t=2, p=1`。
+- 密码失败次数和第 5/10/15/20 次等待状态持久化；公开登录与配对端点增加内存限速。
+- 正常刷新复用有效短会话；页面连续无前台活动满 10 分钟后，HTTP、API 和 WebSocket 统一失效。
+- 新增设备命名、待批准申请、撤销和旧 Passkey 数据失败关闭；不提供改密或远程找回。
+- 删除 LAN、旧 PIN、Passkey/WebAuthn、`?token=`、Quick Tunnel、无认证 CLI 和第三方镜像自动下载。
+- `cloudflared` 缺失时从 Cloudflare 官方 GitHub Releases 下载，并以官方 SHA-256 摘要校验。
+- 新增安全模型、荣耀 50 真实设备验收清单及对应自动测试。
 
 # [2.10.0](https://github.com/shaobeichen/dsh-pocket/compare/v2.9.1...v2.10.0) (2026-08-30)
 

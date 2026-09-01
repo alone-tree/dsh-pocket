@@ -14,9 +14,9 @@ async function fakeUpstream() {
 }
 
 const deviceAuth = {
-  status: () => ({ credentialCount: 1, credentials: [], pending: [] }),
-  consumeEntryTicket: (req) => req.url.includes('pocket-entry=valid'),
-  authorizeRequest: () => null,
+  status: () => ({ deviceCount: 1, devices: [], pending: [] }),
+  hasApprovedDevice: (req) => String(req.headers.cookie ?? '').includes('device=yes'),
+  authorizeRequest: (req) => String(req.headers.cookie ?? '').includes('approved=yes') ? { deviceId: 'device-1' } : null,
   handleHttp: async () => false,
 };
 
@@ -27,8 +27,8 @@ test('真实链路：安全代理只监听 loopback，未认证导航不进入 D
     const proxy = await service.startProxy();
     assert.equal(proxy.server.address().address, '127.0.0.1');
     const login = await fetch(`http://127.0.0.1:${proxy.port}/`, { headers: { accept: 'text/html' } });
-    assert.match(await login.text(), /使用本机身份确认/);
-    const entered = await fetch(`http://127.0.0.1:${proxy.port}/?pocket-entry=valid`, { headers: { accept: 'text/html' } });
+    assert.match(await login.text(), /此浏览器尚未配对/);
+    const entered = await fetch(`http://127.0.0.1:${proxy.port}/`, { headers: { accept: 'text/html', cookie: 'approved=yes' } });
     const html = await entered.text();
     assert.match(html, /real-dsh/);
     assert.match(html, /data-dsh-pocket-session-guard/);
@@ -38,14 +38,16 @@ test('真实链路：安全代理只监听 loopback，未认证导航不进入 D
   }
 });
 
-test('浏览器产物包含设备配对与 Passkey，保留移动端适配', async () => {
+test('浏览器产物包含设备配对与密码认证，不依赖 WebAuthn，并保留移动端适配', async () => {
   const client = await readFile(new URL('../client/client.js', import.meta.url), 'utf8');
-  const passkey = await readFile(new URL('../client/passkey.js', import.meta.url), 'utf8');
+  const auth = await readFile(new URL('../client/auth.js', import.meta.url), 'utf8');
   assert.match(client, /device\.pairingStart/);
   assert.match(client, /device\.revoke/);
   assert.match(client, /var React = require\("react"\)/);
   assert.match(client, /data-mobile-nav/);
-  assert.match(passkey, /navigator\.credentials|PublicKeyCredential/);
+  assert.match(auth, /pocket-auth\/login/);
+  assert.match(auth, /pocket-pair\/submit/);
+  assert.doesNotMatch(auth, /navigator\.credentials|PublicKeyCredential|WebAuthn/);
 });
 
 test('发布包不再提供无认证 CLI、LAN、PIN 或 Quick Tunnel 入口', async () => {

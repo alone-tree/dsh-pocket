@@ -1,5 +1,5 @@
 // dsh-pocket 安全设置页 + 移动端适配。
-// 公网只保留固定 HTTPS 命名隧道；访问身份只保留本机批准的 Passkey 设备。
+// 公网只保留固定 HTTPS 命名隧道；访问身份由本机批准的浏览器设备凭据和独立密码共同确认。
 
 import { createElement as h, useEffect, useMemo, useRef, useState } from 'react';
 import { POCKET_RPC_CHANNEL, POCKET_ENDPOINTS, redactStatus } from './api.js';
@@ -72,7 +72,7 @@ function PocketSettingsTab({ rpcCall }) {
     finally { setBusy(''); }
   };
 
-  const deviceState = status?.deviceAuth || { credentials: [], pending: [], credentialCount: 0 };
+  const deviceState = status?.deviceAuth || { devices: [], pending: [], deviceCount: 0 };
   const configured = Boolean(status?.tunnelConfig?.hostname && status?.tunnelConfig?.tokenSet);
   const isRemote = useMemo(() => {
     try { return Boolean(deviceState.publicOrigin && location.origin === deviceState.publicOrigin); }
@@ -101,7 +101,7 @@ function PocketSettingsTab({ rpcCall }) {
   });
   const startPairing = () => run('pair', async () => {
     const value = await call(POCKET_ENDPOINTS.devicePairingStart);
-    setPairing(value); setMessage('请用手机扫码，完成后回到这里批准');
+    setPairing(value); setMessage('请用目标手机浏览器扫码并设置设备密码，然后回到这里批准');
   });
   const approve = (id) => run(`approve:${id}`, async () => {
     setStatus(await call(POCKET_ENDPOINTS.deviceApprove, { id }));
@@ -138,7 +138,7 @@ function PocketSettingsTab({ rpcCall }) {
 
     h('section', { style: styles.card },
       h('div', { style: styles.title }, '允许访问的设备'),
-      h('p', { style: styles.muted }, '新增设备必须同时操作这台电脑和手机。手机扫码确认后，还要在电脑上批准。'),
+      h('p', { style: styles.muted }, '新增设备必须同时操作这台电脑和目标手机浏览器。手机设置独立密码并提交后，还要在电脑上批准。'),
       h('div', { style: { ...styles.row, marginTop: 14 } },
         h('button', { style: styles.primary, onClick: startPairing, disabled: Boolean(busy) || !status.tunnelRunning }, busy === 'pair' ? '生成中…' : '添加设备'),
         !status.tunnelRunning ? h('span', { style: styles.muted }, '请先开启固定公网入口') : null,
@@ -161,15 +161,15 @@ function PocketSettingsTab({ rpcCall }) {
         )),
       ) : null,
       h('div', { style: { marginTop: 12 } },
-        deviceState.credentials?.length
-          ? deviceState.credentials.map((device) => h('div', { key: device.id, style: styles.item },
+        deviceState.devices?.length
+          ? deviceState.devices.map((device) => h('div', { key: device.id, style: styles.item },
               h('div', null,
                 h('div', { style: { fontSize: 13, fontWeight: 600 } }, device.name),
-                h('div', { style: styles.muted }, `最近使用：${formatTime(device.lastUsedAt)}${device.backedUp ? ' · 可同步到本人其他设备' : ''}`),
+                h('div', { style: styles.muted }, `最近使用：${formatTime(device.lastUsedAt)}`),
               ),
               h('button', { style: styles.danger, onClick: () => revoke(device.id, device.name), disabled: Boolean(busy) }, '移除'),
             ))
-          : h('div', { style: styles.muted }, '尚未批准任何设备。公网入口只会显示“等待电脑批准设备”，不会暴露 DSH。'),
+          : h('div', { style: styles.muted }, '尚未批准任何设备。公网入口不会暴露 DSH。'),
       ),
     ),
 

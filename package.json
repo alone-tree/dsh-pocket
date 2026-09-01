@@ -1,7 +1,7 @@
 {
   "name": "dsh-pocket",
   "private": true,
-  "description": "通过固定 HTTPS、Passkey 设备白名单和电脑本机批准，安全访问主机上的 DeepSeek Harness。",
+  "description": "通过固定 HTTPS、浏览器设备凭据、独立密码和电脑本机批准，安全访问主机上的 DeepSeek Harness。",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -25,8 +25,7 @@
     "test": "node --test --test-timeout=30000 \"test/*.test.js\""
   },
   "dependencies": {
-    "@simplewebauthn/browser": "^13.3.0",
-    "@simplewebauthn/server": "^13.3.3",
+    "argon2": "0.45.1",
     "qrcode": "^1.5.4"
   },
   "devDependencies": {
@@ -49,8 +48,8 @@
     "dsh-plugin",
     "mobile",
     "remote",
-    "passkey",
-    "webauthn",
+    "device-authentication",
+    "password",
     "cloudflare-tunnel"
   ],
   "dsh": {
