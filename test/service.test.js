@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { createPocketService } from '../lib/service.mjs';
 import { installPocketRpc } from '../lib/web-rpc.js';
 import { POCKET_RPC_CHANNEL, POCKET_ENDPOINTS } from '../client/api.js';
@@ -83,6 +86,42 @@ test('只启动命名 Tunnel，并返回固定 HTTPS 地址', async () => {
   service.stopTunnel();
   assert.equal(killed, true);
   await service.dispose();
+});
+
+test('公网开关状态持久化：dispose 保留自动恢复标记，手动关闭清除', async () => {
+  const home = await mkdtemp(join(tmpdir(), 'dsh-pocket-auto-'));
+  const markerPath = join(home, 'dsh-pocket', 'tunnel-auto.json');
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 25)); // persistAutoTunnel/clearAutoTunnel 是 void 异步写
+  const starts = [];
+  const makeService = () => createPocketService({
+    dshPort: 3080,
+    port: 3081,
+    home,
+    getTunnelConfig: () => ({ hostname: 'work.example.com', token: 'T'.repeat(40) }),
+    internals: baseInternals({
+      startNamedTunnel: async () => { starts.push(1); return { kill() {}, onExit() {} }; },
+    }),
+  });
+
+  let service = makeService();
+  await service.startTunnel();
+  await settle();
+  assert.ok(JSON.parse(await readFile(markerPath, 'utf8')).at > 0, '开启成功应写入「应开启」标记');
+  await service.dispose(); // 模拟 DSH 正常退出：不是用户关闭公网入口
+  assert.ok(JSON.parse(await readFile(markerPath, 'utf8')).at > 0, 'dispose 必须保留标记');
+
+  service = makeService();
+  await service.restoreTunnelIfNeeded(); // 模拟 DSH 重启
+  assert.equal(starts.length, 2, '重启后应按标记自动拉起隧道');
+  service.stopTunnel(); // 用户手动关闭
+  await settle();
+  await service.dispose();
+
+  service = makeService();
+  await service.restoreTunnelIfNeeded();
+  assert.equal(starts.length, 2, '手动关闭后重启不得自动拉起');
+  await service.dispose();
+  await rm(home, { recursive: true, force: true });
 });
 
 test('端口冲突时仅在 loopback 上尝试下一个端口', async () => {
