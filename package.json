@@ -1,11 +1,9 @@
 {
   "name": "dsh-pocket",
-  "description": "把 DeepSeek Harness 装进你的口袋：一个包、一个设置页，手机扫码即同步访问电脑上的 DSH（局域网 + 公网，实时同屏）。",
+  "private": true,
+  "description": "通过固定 HTTPS、Passkey 设备白名单和电脑本机批准，安全访问主机上的 DeepSeek Harness。",
   "type": "module",
   "main": "lib/index.js",
-  "bin": {
-    "dsh-pocket": "bin/dsh-pocket.mjs"
-  },
   "exports": {
     ".": {
       "default": "./lib/index.js"
@@ -14,11 +12,11 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "bin",
     "lib",
     "client",
     "cordis.patch.yml",
     "README.md",
+    "SECURITY.md",
     "LICENSE"
   ],
   "scripts": {
@@ -27,8 +25,9 @@
     "test": "node --test --test-timeout=30000 \"test/*.test.js\""
   },
   "dependencies": {
-    "qrcode": "^1.5.4",
-    "qrcode-terminal": "^0.12.0"
+    "@simplewebauthn/browser": "^13.3.0",
+    "@simplewebauthn/server": "^13.3.3",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "@semantic-release/changelog": "^6.0.3",
@@ -50,8 +49,9 @@
     "dsh-plugin",
     "mobile",
     "remote",
-    "qr",
-    "tunnel"
+    "passkey",
+    "webauthn",
+    "cloudflare-tunnel"
   ],
   "dsh": {
     "bundle": {

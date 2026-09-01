@@ -1,3 +1,12 @@
+# 未发布：安全架构改造
+
+- 公网入口改为固定 HTTPS Cloudflare Named Tunnel，代理只监听 `127.0.0.1`。
+- 新增 Passkey/WebAuthn 设备白名单、一次性配对二维码和电脑本机批准流程。
+- 每次顶层页面打开或刷新重新验证；前台续期，后台 10 分钟失效。
+- 新增设备命名、撤销和内存会话失效。
+- 删除 LAN、PIN、`?token=`、Quick Tunnel、无认证 CLI 和第三方镜像自动下载。
+- 新增安全模型、真实设备验收清单及对应自动测试。
+
 # [2.10.0](https://github.com/shaobeichen/dsh-pocket/compare/v2.9.1...v2.10.0) (2026-08-30)
 
 

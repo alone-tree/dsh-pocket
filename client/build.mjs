@@ -45,3 +45,21 @@ ${bundled}
 await mkdir(dirname(outputPath), { recursive: true });
 await writeFile(outputPath, wrapped, 'utf8');
 console.log(`Wrote ${outputPath}`);
+
+// 未登录页使用的独立 Passkey 客户端。它不能依赖 DSH 自己的模块加载器，
+// 因为通过设备验证之前不会向浏览器暴露 DSH 页面与资源。
+const passkeyOutputPath = resolve(packageRoot, 'client/passkey.js');
+const passkeyResult = await build({
+  entryPoints: [resolve(sourceDir, 'passkey-entry.js')],
+  bundle: true,
+  format: 'iife',
+  platform: 'browser',
+  target: ['chrome100', 'safari15'],
+  write: false,
+  minify: process.env.NODE_ENV === 'production',
+  legalComments: 'none',
+});
+const passkeyBundle = passkeyResult.outputFiles?.[0]?.text;
+if (!passkeyBundle) throw new Error('esbuild did not produce a passkey bundle');
+await writeFile(passkeyOutputPath, passkeyBundle, 'utf8');
+console.log(`Wrote ${passkeyOutputPath}`);

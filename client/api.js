@@ -6,17 +6,14 @@ export const POCKET_ENDPOINTS = Object.freeze({
   tunnelStart: 'tunnel.start',
   tunnelStop: 'tunnel.stop',
   tunnelSetConfig: 'tunnel.setConfig',
+  devicePairingStart: 'device.pairingStart',
+  deviceApprove: 'device.approve',
+  deviceReject: 'device.reject',
+  deviceRevoke: 'device.revoke',
   version: 'pocket.version',
   update: 'pocket.update',
   restart: 'pocket.restart',
-  lanTokenRefresh: 'token.lanRefresh',
-  lanAuthSetEnabled: 'lanAuth.setEnabled',
-  lanSetOverride: 'lan.setOverride',
-  lanSetEnabled: 'lan.setEnabled',
-  pinSetCustom: 'pin.setCustom',
   pocketReset: 'pocket.reset',
-  // 移动端「复制文件内容」（issue #17）：手机经此 RPC 让主机读取文件正文，
-  // 再写入剪贴板——因为手机无法直接打开电脑上的文件。
   fileRead: 'pocket.fileRead',
 });
 
@@ -59,15 +56,12 @@ export function redactStatus(s) {
   return {
     proxyRunning: s?.proxyRunning === true,
     proxyPort: s?.proxyPort ?? null,
-    lanUrl: s?.lanUrl ?? null,
-    lanQr: s?.lanQr ?? null,
-    lanCandidates: Array.isArray(s?.lanCandidates) ? s.lanCandidates : [],
-    lanIpOverride: s?.lanIpOverride ?? '',
     tunnelRunning: s?.tunnelRunning === true,
     tunnelUrl: s?.tunnelUrl ?? null,
     tunnelQr: s?.tunnelQr ?? null,
     tunnelState: s?.tunnelState ?? { phase: 'idle' },
-    tunnelConfig: s?.tunnelConfig ?? { mode: 'quick', hostname: '', tokenSet: false },
+    tunnelConfig: s?.tunnelConfig ?? { mode: 'named', hostname: '', tokenSet: false },
+    deviceAuth: s?.deviceAuth ?? { configured: false, credentialCount: 0, credentials: [], pending: [] },
     dshPort: s?.dshPort ?? null,
   };
 }
