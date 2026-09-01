@@ -138,7 +138,7 @@ function PocketSettingsTab({ rpcCall }) {
 
     h('section', { style: styles.card },
       h('div', { style: styles.title }, '允许访问的设备'),
-      h('p', { style: styles.muted }, '新增设备必须同时操作这台电脑和目标手机浏览器。手机设置独立密码并提交后，还要在电脑上批准。'),
+      h('p', { style: styles.muted }, '点击“添加设备”生成二维码，用目标手机浏览器扫码并设置设备名称和密码。手机提交后，回到电脑点击“允许”。批准完成后，在手机配对页点击“电脑已批准，进入 DSH”，再输入刚设置的密码。'),
       h('div', { style: { ...styles.row, marginTop: 14 } },
         h('button', { style: styles.primary, onClick: startPairing, disabled: Boolean(busy) || !status.tunnelRunning }, busy === 'pair' ? '生成中…' : '添加设备'),
         !status.tunnelRunning ? h('span', { style: styles.muted }, '请先开启固定公网入口') : null,

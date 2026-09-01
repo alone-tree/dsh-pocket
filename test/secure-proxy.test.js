@@ -101,7 +101,11 @@ test('配对页面可公开打开，但不会直接授予 DSH 访问权', async 
     assert.equal(client.headers.get('cache-control'), 'no-store', '升级后不能复用旧 Passkey 脚本缓存');
     const response = await fetch(`http://127.0.0.1:${proxy.port}/pocket-pair#pair=test`);
     assert.equal(response.status, 200);
-    assert.match(await response.text(), /二维码和密码都不能单独授予访问权限/);
+    const pairingHtml = await response.text();
+    assert.match(pairingHtml, /二维码和密码都不能单独授予访问权限/);
+    assert.match(pairingHtml, /配对申请已提交/);
+    assert.match(pairingHtml, /电脑已批准，进入 DSH/);
+    assert.match(pairingHtml, /<a class="button-link" href="\/">/);
     assert.equal(upstream.seen.length, 0);
   } finally {
     await proxy.close();
