@@ -21,7 +21,7 @@
 1. 代理默认并强制监听 `127.0.0.1`，不开放 LAN socket。
 2. 只运行固定域名 Cloudflare Named Tunnel；配置不完整时失败关闭。
 3. 不提供 PIN、密码、URL Token、Quick Tunnel 或无认证 CLI。
-4. 不自动下载 `cloudflared`；只使用 PATH 或用户明确指定的官方二进制。
+4. `cloudflared` 只来自三类可信来源：用户显式路径、PATH 中的现有安装，或两者都缺失时从 Cloudflare 官方 GitHub Releases 自动下载（以官方 API 提供的 SHA-256 摘要校验，不匹配即丢弃；不使用任何第三方镜像）。
 5. WebAuthn 要求固定 HTTPS Origin、固定 RP ID 和 `userVerification: required`。
 6. 注册前必须持有 5 分钟一次性配对秘密；注册后仍需电脑本机批准。
 7. 认证挑战使用一次后删除，2 分钟过期，内存表最多保留 256 条；配对秘密使用一次后删除。

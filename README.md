@@ -38,7 +38,7 @@ $DSH_HOME/dsh-pocket/device-credentials.json
 ## 使用前准备
 
 1. 拥有 Cloudflare 账号和一个由 Cloudflare 管理的域名。
-2. 从 [Cloudflare 官方渠道](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)安装 `cloudflared`，并加入 `PATH`；也可在设置文件中填写官方二进制路径：
+2. `cloudflared` 可以手动安装，也可以不装：首次开启隧道时，插件会自动从 Cloudflare 官方 GitHub Releases 下载当前平台的二进制，并用官方 API 提供的 SHA-256 摘要校验，通过后存入 `$DSH_HOME/dsh-pocket/bin/`（不使用任何第三方镜像）。手动安装仍是受支持的方式：从 [Cloudflare 官方渠道](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)安装并加入 `PATH`，也可在设置文件中填写官方二进制路径：
 
    ```json
    {
