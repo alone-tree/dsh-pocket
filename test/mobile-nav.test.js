@@ -141,6 +141,28 @@ test('打包产物里带上抽屉规则的关键字', () => {
   }
 });
 
+test('composer 底栏用稳定 card 标记并在 360px 视口保持单行', () => {
+  const css = readFileSync(new URL('../client/mobile/mobile.css.ts', import.meta.url), 'utf8');
+  assert.ok(css.includes('[data-composer-card="true"] > [class$="_row"]'));
+  assert.ok(css.includes('flex-wrap: nowrap !important'));
+  assert.ok(
+    !css.includes('[class*="_card"]:has(textarea) > :last-child'),
+    '会话 composer 底栏不能再依赖 textarea',
+  );
+});
+
+test('统计行只从 composer.dock 标记，不误标 contenteditable composer 根节点', () => {
+  const src = readFileSync(new URL('../client/mobile/mobile-apply.tsx', import.meta.url), 'utf8');
+  assert.ok(
+    src.includes('[data-slot="conversation.composer.dock"] [class$="_root"]'),
+    '统计行必须限定在 DSH 的 conversation.composer.dock 稳定插槽内',
+  );
+  assert.ok(
+    !src.includes("document.querySelectorAll('[data-phase] [class$=\"_root\"]')"),
+    '不能扫描 composer 内所有 *_root；新版编辑器是 contenteditable，会让 composer 根误命中',
+  );
+});
+
 test('打包产物：mobile-apply 引用的组件都有 import 且有定义', () => {
   const src = readFileSync(new URL('../client/mobile/mobile-apply.tsx', import.meta.url), 'utf8');
   const bundle = readFileSync(new URL('../client/client.js', import.meta.url), 'utf8');
