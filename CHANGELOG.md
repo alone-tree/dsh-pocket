@@ -10,6 +10,7 @@
 - 删除 LAN、旧 PIN、Passkey/WebAuthn、`?token=`、Quick Tunnel、无认证 CLI 和第三方镜像自动下载。
 - `cloudflared` 缺失时从 Cloudflare 官方 GitHub Releases 下载，并以官方 SHA-256 摘要校验。
 - 新增安全模型、荣耀 50 真实设备验收清单及对应自动测试。
+- 修复 issue #89：统计行标记限定在 DSH 的 `conversation.composer.dock` 插槽，避免新版 `contenteditable` 输入组件被误压缩到 28px；360px 视口下将指令、权限、模型、推理等级和发送控件保持在同一行；同时收紧移动端会话头部与原生 disclosure 的多余留白，不改变 DSH 自带展开/折叠行为。
 
 # [2.10.0](https://github.com/shaobeichen/dsh-pocket/compare/v2.9.1...v2.10.0) (2026-08-30)
 

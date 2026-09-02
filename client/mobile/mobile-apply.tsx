@@ -182,11 +182,10 @@ export function mobileApply(ctx): void {
 
   // The official conversation status row (turns / steps / LLM time / TTFT /
   // cache) has a hashed class, so the stylesheet cannot target it directly.
-  // Mark the exact row on narrow screens by text: a [class$=_root] that
-  // carries the metrics text and no textarea (the composer card also ends in
-  // _root and can mention turns in its model line). The CSS then lays the
-  // marked row out as ONE horizontally scrolling line with every metric
-  // reachable.
+  // Its stable boundary is the official conversation.composer.dock slot. Mark
+  // only the metrics root inside that slot; never scan every *_root under the
+  // composer because the editor itself is now contenteditable (not textarea)
+  // and its root also contains the dock text.
   ctx.effect(() => {
     if (!narrow.matches) return () => {}
     // The composer root renders the TPS readout ("TPS 89.4 tok/s") as its
@@ -206,13 +205,10 @@ export function mobileApply(ctx): void {
       }
     }
     const mark = (): void => {
-      for (const root of document.querySelectorAll('[data-phase] [class$="_root"]')) {
-        // The status row lives inside the composer stack; message-area
-        // blocks can also mention turns/steps and must be skipped.
-        if (root.closest('[class$="_composerStack"]') === null) continue
+      const selector = '[data-phase] [data-slot="conversation.composer.dock"] [class$="_root"]'
+      for (const root of document.querySelectorAll(selector)) {
         const text = root.textContent ?? ''
         if (!/(turns|steps|\bLLM\b|轮|步)/.test(text)) continue
-        if (root.querySelector('textarea') !== null) continue
         root.setAttribute('data-mobile-nav', 'stats')
         moveTps(root)
         return
