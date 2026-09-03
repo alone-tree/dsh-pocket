@@ -9,7 +9,7 @@
 
 import { createElement as h, useEffect, useRef, useState } from 'react';
 
-import { POCKET_RPC_CHANNEL, POCKET_ENDPOINTS, redactStatus, compareVersions } from './api.js';
+import { POCKET_RPC_CHANNEL, POCKET_ADMIN_RPC_CHANNEL, POCKET_ENDPOINTS, redactStatus, compareVersions } from './api.js';
 import { mobileApply } from './mobile/mobile-apply.tsx';
 import { NS as POCKET_NS, zh as POCKET_ZH, en as POCKET_EN } from './pocket-locales.js';
 
@@ -44,8 +44,10 @@ const styles = {
   warn: { color: 'var(--dsw-alias-state-warn-primary,#b45309)', fontSize: 12, lineHeight: 1.5 },
 };
 
-function PocketSettingsTab({ rpcCall, t }) {
+function PocketSettingsTab({ rpcCall, adminRpcCall, t }) {
   const [status, setStatus] = useState(null);
+  const [deviceAuth, setDeviceAuth] = useState(null);
+  const [pairing, setPairing] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [tunnelState, setTunnelState] = useState(null); // 隧道进度 {phase, detail, startedAt}
@@ -66,11 +68,21 @@ function PocketSettingsTab({ rpcCall, t }) {
     if (!res?.ok) throw new Error(res?.error?.message ?? 'RPC failed');
     return res.value;
   };
+  const callAdmin = async (endpoint, payload) => {
+    const res = await adminRpcCall(endpoint, payload);
+    if (!res?.ok) throw new Error(res?.error?.message ?? 'RPC failed');
+    return res.value;
+  };
 
   const load = async () => {
     try {
-      const s = await call(POCKET_ENDPOINTS.status, {});
+      const [s, devices] = await Promise.all([
+        call(POCKET_ENDPOINTS.status, {}),
+        // 设备状态走本机 admin 通道：手机/远程访问会失败，此时隐藏设备管理区块。
+        callAdmin(POCKET_ENDPOINTS.deviceStatus, {}).catch(() => null),
+      ]);
       setStatus(s);
+      setDeviceAuth(devices);
       setTunnelState(s.tunnelState ?? null);
       if (s.desktop) setIsDesktop(true);
       if (s.restartNotice) {
@@ -163,15 +175,13 @@ function PocketSettingsTab({ rpcCall, t }) {
     }
   };
 
-  // 安全免责声明（issue #31）：每次开启公网都必须先弹框勾选「我已知情」。
-  // 服务端同样强制（tunnel.start 需 disclaimer: true），防绕过前端直接调 RPC。
-
-  const [disclaimerOpen, setDisclaimerOpen] = useState(false);
+  // 安全声明（issue #31，三通道分文案）：开启任一通道前必须先弹框勾选「我已知情」。
+  // Quick/Named 服务端同样强制（tunnel.start 需 disclaimer: true），防绕过前端直接调 RPC。
+  // disclaimerMode: 'lan' | 'quick' | 'named' | null
+  const [disclaimerMode, setDisclaimerMode] = useState(null);
   const [disclaimerChecked, setDisclaimerChecked] = useState(false);
-  const [requestedTunnelMode, setRequestedTunnelMode] = useState(null);
 
-  const doStartTunnel = async () => {
-    const mode = requestedTunnelMode ?? status?.tunnelConfig?.mode ?? 'quick';
+  const doStartTunnel = async (mode) => {
     setBusy(true);
     setError(null);
     try {
@@ -190,19 +200,27 @@ function PocketSettingsTab({ rpcCall, t }) {
     } catch (err) {
       setError(err.message);
     } finally {
-      setRequestedTunnelMode(null);
       setBusy(false);
     }
   };
   const startTunnel = (mode) => {
-    setRequestedTunnelMode(mode);
+    setDisclaimerMode(mode);
     setDisclaimerChecked(false);
-    setDisclaimerOpen(true);
   };
-  const confirmDisclaimer = () => {
-    if (!disclaimerChecked) return; // 未勾选不允许
-    setDisclaimerOpen(false);
-    doStartTunnel();
+  const confirmDisclaimer = async () => {
+    const mode = disclaimerMode;
+    if (!disclaimerChecked || !mode) return; // 未勾选不允许
+    setDisclaimerMode(null);
+    if (mode === 'lan') {
+      try {
+        const r = await call(POCKET_ENDPOINTS.lanSetEnabled, { on: true });
+        setStatus((s) => ({ ...s, lanEnabled: r.lanEnabled }));
+      } catch (err) {
+        setError(err.message);
+      }
+      return;
+    }
+    doStartTunnel(mode);
   };
 
   const stopTunnel = async () => {
@@ -224,6 +242,24 @@ function PocketSettingsTab({ rpcCall, t }) {
       setTunnelCfg((c) => ({ ...c, err: err.message }));
     }
   };
+
+  const startPairing = async () => {
+    try { setPairing(await callAdmin(POCKET_ENDPOINTS.devicePairingStart, {})); }
+    catch (err) { setError(err.message); }
+  };
+  const approveDevice = async (id) => {
+    try { setDeviceAuth(await callAdmin(POCKET_ENDPOINTS.deviceApprove, { id })); setPairing(null); }
+    catch (err) { setError(err.message); }
+  };
+  const rejectDevice = async (id) => {
+    try { setDeviceAuth(await callAdmin(POCKET_ENDPOINTS.deviceReject, { id })); setPairing(null); }
+    catch (err) { setError(err.message); }
+  };
+  const revokeDevice = async (id) => {
+    try { setDeviceAuth(await callAdmin(POCKET_ENDPOINTS.deviceRevoke, { id })); }
+    catch (err) { setError(err.message); }
+  };
+  const formatTime = (value) => value ? new Date(value).toLocaleString() : t('neverLoggedIn');
 
   // 恢复出厂设置：清本机设置 + 重设随机密码（弹窗确认；RPC 端也强制校验 confirm）
   const [resetOpen, setResetOpen] = useState(false);
@@ -262,15 +298,16 @@ function PocketSettingsTab({ rpcCall, t }) {
   };
 
   // 局域网访问总开关：关闭后局域网扫码/链接直接失效（公网不受影响）。
-  // 切换前弹窗确认（弹窗提醒）；服务端用 setLanEnabled 持久化，代理按 Host 实时拦截。
-  const [lanToggleOpen, setLanToggleOpen] = useState(null); // null | true | false（目标 on 状态）
-  const requestLanToggle = (on) => setLanToggleOpen(on);
+  // 开启走三通道声明弹窗（勾选确认）；关闭仍用简单确认框。服务端用 setLanEnabled 持久化，代理按 Host 实时拦截。
+  const [lanToggleOpen, setLanToggleOpen] = useState(null); // null | false（仅关闭方向）
+  const requestLanToggle = (on) => {
+    if (on) { setDisclaimerMode('lan'); setDisclaimerChecked(false); }
+    else setLanToggleOpen(false);
+  };
   const confirmLanToggle = async () => {
-    const on = lanToggleOpen;
     setLanToggleOpen(null);
-    if (on === null) return;
     try {
-      const r = await call(POCKET_ENDPOINTS.lanSetEnabled, { on });
+      const r = await call(POCKET_ENDPOINTS.lanSetEnabled, { on: false });
       setStatus((s) => ({ ...s, lanEnabled: r.lanEnabled }));
     } catch (err) {
       setError(err.message);
@@ -463,7 +500,7 @@ function PocketSettingsTab({ rpcCall, t }) {
           : h('div', { style: styles.muted }, t('lanStarting'))),
     ),
 
-    // 固定域名 Named：独立配置与启停。过渡期（PR2 前）仍使用公网访问密码。
+    // 固定域名 Named：独立配置、启停与设备管理。
     h('div', { style: styles.block },
       h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
         h('div', null,
@@ -485,18 +522,22 @@ function PocketSettingsTab({ rpcCall, t }) {
         h('div', { style: { ...styles.muted, marginTop: 6 } }, t('namedHow')),
         tunnelCfg.err ? h('div', { style: { color: 'var(--dsw-alias-state-error-primary,#dc2626)', marginTop: 4 } }, errText(tunnelCfg.err)) : null) : null,
       tunnelUrl && activeNamedMode ? qrArea(status.tunnelQr, tunnelUrl, t('namedRunningHint')) : null,
-      // 过渡提示：设备认证在下一个 PR 落地
-      h('div', { style: { ...styles.warn, marginTop: 8 } }, t('namedPinTransition')),
-      // 认证过渡期：Named 沿用公网访问密码
-      status?.accessToken ? row(t('pinLabel'),
-        customPin?.which === 'public'
-          ? null
-          : h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 8 } },
-            h('span', { style: { fontFamily: 'ui-monospace,Menlo,monospace', fontSize: 13, letterSpacing: 1 } }, status?.accessToken),
-            customBtn('public')),
-        h('div', { style: { marginTop: 6 } },
-          customPin?.which === 'public' ? customPinRow('public') : null,
-          status?.publicPinCustom ? h('div', { style: { ...styles.warn } }, t('pinCustomHint')) : null)) : null,
+      // 设备管理仅电脑本机可用（admin 通道）；远程页面加载不到 deviceStatus 时整块隐藏。
+      deviceAuth ? row(t('approvedDevices'), h('button', { style: { ...styles.btn, height: 28, padding: '0 12px', fontSize: 12 }, onClick: startPairing }, t('addDevice')),
+        h('div', { style: { marginTop: 8 } },
+          pairing ? h('div', { style: { textAlign: 'center', background: 'var(--dsw-alias-bg-layer-2,#f3f4f6)', padding: 10, borderRadius: 8 } },
+            h('img', { src: pairing.qr, alt: t('pairingQrAlt'), style: styles.qr }),
+            h('div', { style: styles.muted }, t('pairingExpires'))) : null,
+          ...(deviceAuth?.pending ?? []).map((item) => h('div', { key: item.id, style: { marginTop: 8, padding: 8, border: '1px solid var(--dsw-alias-state-warn-primary,#b45309)', borderRadius: 8 } },
+            h('div', { style: { fontSize: 13, fontWeight: 600 } }, item.name),
+            h('div', { style: styles.muted }, t('waitingApproval')),
+            h('div', { style: { display: 'flex', gap: 8, marginTop: 6 } },
+              h('button', { style: { ...styles.primary, height: 28 }, onClick: () => approveDevice(item.id) }, t('approve')),
+              h('button', { style: { ...styles.btn, height: 28 }, onClick: () => rejectDevice(item.id) }, t('reject'))))),
+          ...(deviceAuth?.devices ?? []).map((item) => h('div', { key: item.id, style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: '8px 0', borderTop: '1px solid var(--dsw-alias-border-l2,#e5e7eb)' } },
+            h('div', null, h('div', { style: { fontSize: 13 } }, item.name), h('div', { style: styles.muted }, `${t('addedAt')} ${formatTime(item.createdAt)} · ${t('lastLoginAt')} ${formatTime(item.lastLoginAt)}`)),
+            h('button', { style: { ...styles.btn, height: 28, color: 'var(--dsw-alias-state-error-primary,#dc2626)' }, onClick: () => revokeDevice(item.id) }, t('revoke')))),
+          !(deviceAuth?.devices?.length) && !(deviceAuth?.pending?.length) ? h('div', { style: styles.muted }, t('noDevices')) : null)) : null,
     ),
 
     // 随机域名 Quick：独立启停与共享密码。
@@ -540,11 +581,11 @@ function PocketSettingsTab({ rpcCall, t }) {
       style: { position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 10001, width: 'auto', maxWidth: 280, background: 'rgba(17,24,39,.92)', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 16px', fontSize: 13, lineHeight: 1.5, textAlign: 'center', boxShadow: '0 8px 24px rgba(0,0,0,.22)' },
     }, toast) : null,
 
-    // 局域网访问开关确认弹框（关闭/打开时弹窗提醒）
-    lanToggleOpen !== null ? h('div', { style: { position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 } },
+    // 局域网访问关闭确认弹框（开启方向走三通道声明弹窗）
+    lanToggleOpen === false ? h('div', { style: { position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 } },
       h('div', { style: { background: 'var(--dsw-alias-bg-layer-1,#fff)', borderRadius: 12, maxWidth: 420, width: '100%', padding: '20px 22px', boxShadow: '0 8px 32px rgba(0,0,0,.18)' } },
-        h('div', { style: { fontWeight: 600, fontSize: 15, color: lanToggleOpen ? 'var(--dsw-alias-brand-primary,#4f6ef7)' : 'var(--dsw-alias-state-warn-primary,#b45309)', marginBottom: 10 } }, t(lanToggleOpen ? 'lanToggleTitleOn' : 'lanToggleTitleOff')),
-        h('div', { style: { fontSize: 13, lineHeight: 1.7, color: 'var(--dsw-alias-label-primary,inherit)' } }, t(lanToggleOpen ? 'lanToggleBodyOn' : 'lanToggleBodyOff')),
+        h('div', { style: { fontWeight: 600, fontSize: 15, color: 'var(--dsw-alias-state-warn-primary,#b45309)', marginBottom: 10 } }, t('lanToggleTitleOff')),
+        h('div', { style: { fontSize: 13, lineHeight: 1.7, color: 'var(--dsw-alias-label-primary,inherit)' } }, t('lanToggleBodyOff')),
         h('div', { style: { display: 'flex', gap: 8, marginTop: 16 } },
           h('button', { style: { ...styles.btn, flex: 1 }, onClick: () => setLanToggleOpen(null) }, t('cancel')),
           h('button', { style: { ...styles.primary, flex: 1 }, onClick: confirmLanToggle }, t('confirm')),
@@ -552,17 +593,17 @@ function PocketSettingsTab({ rpcCall, t }) {
       ),
     ) : null,
 
-    // 安全免责声明弹框（issue #31）：每次开启公网访问前确认
-    disclaimerOpen ? h('div', { style: { position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 } },
+    // 通道安全声明弹框：按即将开启的通道显示对应文案（lan/quick/named）
+    disclaimerMode ? h('div', { style: { position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 } },
       h('div', { style: { background: 'var(--dsw-alias-bg-layer-1,#fff)', borderRadius: 12, maxWidth: 420, width: '100%', padding: '20px 22px', boxShadow: '0 8px 32px rgba(0,0,0,.18)' } },
-        h('div', { style: { fontWeight: 600, fontSize: 15, color: 'var(--dsw-alias-state-warn-primary,#b45309)', marginBottom: 10 } }, t('disclaimerTitle')),
-        h('div', { style: { fontSize: 13, lineHeight: 1.7, color: 'var(--dsw-alias-label-primary,inherit)' } }, t('disclaimerBody')),
+        h('div', { style: { fontWeight: 600, fontSize: 15, color: 'var(--dsw-alias-state-warn-primary,#b45309)', marginBottom: 10 } }, t(disclaimerMode === 'lan' ? 'lanDisclaimerTitle' : disclaimerMode === 'named' ? 'namedDisclaimerTitle' : 'quickDisclaimerTitle')),
+        h('div', { style: { fontSize: 13, lineHeight: 1.7, color: 'var(--dsw-alias-label-primary,inherit)', whiteSpace: 'pre-line' } }, t(disclaimerMode === 'lan' ? 'lanDisclaimerBody' : disclaimerMode === 'named' ? 'namedDisclaimerBody' : 'quickDisclaimerBody')),
         h('label', { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, fontSize: 13, cursor: 'pointer' } },
           h('input', { type: 'checkbox', checked: disclaimerChecked, onChange: (e) => setDisclaimerChecked(e.target.checked), style: { width: 16, height: 16 } }),
           t('disclaimerAgree'),
         ),
         h('div', { style: { display: 'flex', gap: 8, marginTop: 16 } },
-          h('button', { style: { ...styles.btn, flex: 1 }, onClick: () => setDisclaimerOpen(false) }, t('cancel')),
+          h('button', { style: { ...styles.btn, flex: 1 }, onClick: () => setDisclaimerMode(null) }, t('cancel')),
           h('button', {
             style: { ...styles.primary, flex: 1, opacity: disclaimerChecked ? 1 : .5 },
             disabled: !disclaimerChecked,
@@ -615,7 +656,7 @@ export function apply(ctx) {
         id: 'pocket',
         order: 1,
         label: () => translate('section'),
-        inject: () => ({ rpcCall, t: translate }),
+        inject: () => ({ rpcCall, adminRpcCall, t: translate }),
       },
       PocketSettingsTab,
     ),

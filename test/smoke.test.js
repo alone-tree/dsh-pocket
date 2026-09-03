@@ -10,7 +10,7 @@ import { join } from 'node:path';
 
 import { createPocketService } from '../lib/service.mjs';
 import { installPocketRpc } from '../lib/web-rpc.js';
-import { POCKET_RPC_CHANNEL, POCKET_ENDPOINTS } from '../client/api.js';
+import { POCKET_RPC_CHANNEL, POCKET_ADMIN_RPC_CHANNEL, POCKET_ENDPOINTS } from '../client/api.js';
 
 /** 假 dsh web：返回一个简单 HTML 文档（走真实 qrcode / 真实代理，无 stub）。 */
 async function fakeUpstream() {
@@ -23,13 +23,13 @@ async function fakeUpstream() {
 }
 
 function fakeCtxConnection() {
-  let handler = null;
+  const handlers = new Map();
   const handle = (channel, fn) => {
-    assert.equal(channel, POCKET_RPC_CHANNEL);
-    handler = fn;
-    return () => { handler = null; };
+    assert.ok(channel === POCKET_RPC_CHANNEL || channel === POCKET_ADMIN_RPC_CHANNEL);
+    handlers.set(channel, fn);
+    return () => handlers.delete(channel);
   };
-  return { rpc: { handle }, get handler() { return handler; } };
+  return { rpc: { handle }, get handler() { return handlers.get(POCKET_ADMIN_RPC_CHANNEL); } };
 }
 
 test('真实链路：代理转发 + polyfill 注入 + 状态快照（无 stub）', async () => {
