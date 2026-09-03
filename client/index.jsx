@@ -220,6 +220,10 @@ function PocketSettingsTab({ rpcCall, adminRpcCall, t }) {
       }
       return;
     }
+    if (mode === 'lan-pin-off') {
+      await setLanAuth(false);
+      return;
+    }
     doStartTunnel(mode);
   };
 
@@ -289,12 +293,16 @@ function PocketSettingsTab({ rpcCall, adminRpcCall, t }) {
     } catch { /* 忽略 */ }
   };
 
-  // 局域网访问密码开关（issue #24）：默认开启；关闭后局域网扫码直连（公网不受影响）
+  // 局域网访问密码开关（issue #24）：默认开启；开启免密（关闭密码）前必读声明，开启密码直接生效
   const setLanAuth = async (on) => {
     try {
       const r = await call(POCKET_ENDPOINTS.lanAuthSetEnabled, { on });
       setStatus((s) => ({ ...s, lanAuthEnabled: r.lanAuthEnabled }));
     } catch { /* 忽略 */ }
+  };
+  const requestLanAuth = (on) => {
+    if (on) setLanAuth(true);
+    else { setDisclaimerMode('lan-pin-off'); setDisclaimerChecked(false); }
   };
 
   // 局域网访问总开关：关闭后局域网扫码/链接直接失效（公网不受影响）。
@@ -468,7 +476,7 @@ function PocketSettingsTab({ rpcCall, adminRpcCall, t }) {
           ? h('div', null,
             qrArea(status.lanQr, lanUrl, t('lanHint')),
             // 访问密码行：开关 + 值（关闭时提示直连）
-            row(t('lanPin'), Switch(status?.lanAuthEnabled !== false, () => setLanAuth(status?.lanAuthEnabled === false)),
+            row(t('lanPin'), Switch(status?.lanAuthEnabled !== false, () => requestLanAuth(status?.lanAuthEnabled === false)),
               status?.lanAuthEnabled === false
                 ? h('div', { style: { ...styles.muted, marginTop: 6 } }, t('lanPinOff'))
                 : (customPin?.which === 'lan'
@@ -596,8 +604,8 @@ function PocketSettingsTab({ rpcCall, adminRpcCall, t }) {
     // 通道安全声明弹框：按即将开启的通道显示对应文案（lan/quick/named）
     disclaimerMode ? h('div', { style: { position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 } },
       h('div', { style: { background: 'var(--dsw-alias-bg-layer-1,#fff)', borderRadius: 12, maxWidth: 420, width: '100%', padding: '20px 22px', boxShadow: '0 8px 32px rgba(0,0,0,.18)' } },
-        h('div', { style: { fontWeight: 600, fontSize: 15, color: 'var(--dsw-alias-state-warn-primary,#b45309)', marginBottom: 10 } }, t(disclaimerMode === 'lan' ? 'lanDisclaimerTitle' : disclaimerMode === 'named' ? 'namedDisclaimerTitle' : 'quickDisclaimerTitle')),
-        h('div', { style: { fontSize: 13, lineHeight: 1.7, color: 'var(--dsw-alias-label-primary,inherit)', whiteSpace: 'pre-line' } }, t(disclaimerMode === 'lan' ? 'lanDisclaimerBody' : disclaimerMode === 'named' ? 'namedDisclaimerBody' : 'quickDisclaimerBody')),
+        h('div', { style: { fontWeight: 600, fontSize: 15, color: 'var(--dsw-alias-state-warn-primary,#b45309)', marginBottom: 10 } }, t(disclaimerMode === 'lan' ? 'lanDisclaimerTitle' : disclaimerMode === 'named' ? 'namedDisclaimerTitle' : disclaimerMode === 'lan-pin-off' ? 'pinOffDisclaimerTitle' : 'quickDisclaimerTitle')),
+        h('div', { style: { fontSize: 13, lineHeight: 1.7, color: 'var(--dsw-alias-label-primary,inherit)', whiteSpace: 'pre-line' } }, t(disclaimerMode === 'lan' ? 'lanDisclaimerBody' : disclaimerMode === 'named' ? 'namedDisclaimerBody' : disclaimerMode === 'lan-pin-off' ? 'pinOffDisclaimerBody' : 'quickDisclaimerBody')),
         h('label', { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, fontSize: 13, cursor: 'pointer' } },
           h('input', { type: 'checkbox', checked: disclaimerChecked, onChange: (e) => setDisclaimerChecked(e.target.checked), style: { width: 16, height: 16 } }),
           t('disclaimerAgree'),
