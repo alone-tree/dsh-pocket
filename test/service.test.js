@@ -5,18 +5,21 @@ import assert from 'node:assert/strict';
 
 import { createPocketService, selectLanIPv4 } from '../lib/service.mjs';
 import { installPocketRpc } from '../lib/web-rpc.js';
-import { POCKET_RPC_CHANNEL, POCKET_ENDPOINTS } from '../client/api.js';
+import { POCKET_RPC_CHANNEL, POCKET_ADMIN_RPC_CHANNEL, POCKET_ENDPOINTS } from '../client/api.js';
 import { isValidIpv4 } from '../lib/ip.mjs';
 
 function fakeCtxConnection() {
-  let handler = null;
-  const handle = (channel, fn, opts) => {
-    assert.equal(channel, POCKET_RPC_CHANNEL);
-    assert.deepEqual(opts, { authority: 'loopback' });
-    handler = fn;
-    return () => { handler = null; };
+  const handlers = new Map();
+  const handle = (channel, fn) => {
+    assert.ok(channel === POCKET_RPC_CHANNEL || channel === POCKET_ADMIN_RPC_CHANNEL);
+    handlers.set(channel, fn);
+    return () => { handlers.delete(channel); };
   };
-  return { rpc: { handle }, get handler() { return handler; } };
+  return {
+    rpc: { handle },
+    get handler() { return handlers.get(POCKET_ADMIN_RPC_CHANNEL); },
+    get publicHandler() { return handlers.get(POCKET_RPC_CHANNEL); },
+  };
 }
 
 function stubInternals() {
@@ -462,13 +465,34 @@ test('lib/index.js 模块可加载，apply 可调用（防模块级 ReferenceErr
     startTunnel: async () => 'https://x.trycloudflare.com', stopTunnel: () => {},
   };
   // apply 内部用 ctx.effect 注册清理，返回值不是契约；这里只验证不抛错
-  mod.apply(ctx, {}, {
+  await mod.apply(ctx, {}, {
     service: stubService,
+    deviceAuth: { status: () => ({ deviceCount: 0 }), reset: async () => {} },
     runUpdate: { currentVersion: () => '1.0.20', loadedVersion: () => '1.0.20', perform: async () => ({ ok: true }) },
     restart: () => ({ helperPid: 1, logOut: '', logErr: '' }),
     restartNotice: async () => null,
   });
   assert.ok(true, 'apply 正常路径不抛错');
+});
+
+test('设备管理端点仅 admin channel 可用，普通 channel 拒绝 device.*', async () => {
+  const conn = fakeCtxConnection();
+  const calls = [];
+  const deviceAuth = {
+    status: () => ({ deviceCount: 1, devices: [], pending: [] }),
+    beginPairing: () => ({ id: 'p1', url: 'https://work.example.com/pocket-pair#pair=x', expiresAt: 1 }),
+    approvePending: async (id) => calls.push(`approve:${id}`),
+    rejectPending: (id) => calls.push(`reject:${id}`),
+    revokeDevice: async (id) => calls.push(`revoke:${id}`),
+  };
+  installPocketRpc({ connection: conn }, { service: { status: async () => ({}) }, deviceAuth, log: { error() {}, warn() {} } });
+  const status = await conn.handler(POCKET_ENDPOINTS.deviceStatus, {});
+  assert.equal(status.ok, true);
+  assert.equal(status.value.deviceCount, 1);
+  assert.equal((await conn.handler(POCKET_ENDPOINTS.deviceApprove, { id: 'd1' })).ok, true);
+  assert.deepEqual(calls, ['approve:d1']);
+  const denied = await conn.publicHandler(POCKET_ENDPOINTS.deviceStatus, {});
+  assert.equal(denied.ok, false);
 });
 
 test('compareVersions：语义化版本比较', async () => {

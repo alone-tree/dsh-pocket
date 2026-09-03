@@ -41,11 +41,17 @@ var import_react2 = require("react");
 
 // client/api.js
 var POCKET_RPC_CHANNEL = "/dsh-pocket";
+var POCKET_ADMIN_RPC_CHANNEL = "/dsh-pocket-admin";
 var POCKET_ENDPOINTS = Object.freeze({
   status: "pocket.status",
   tunnelStart: "tunnel.start",
   tunnelStop: "tunnel.stop",
   tunnelSetConfig: "tunnel.setConfig",
+  deviceStatus: "device.status",
+  devicePairingStart: "device.pairingStart",
+  deviceApprove: "device.approve",
+  deviceReject: "device.reject",
+  deviceRevoke: "device.revoke",
   version: "pocket.version",
   update: "pocket.update",
   restart: "pocket.restart",
@@ -1891,11 +1897,22 @@ var zh2 = {
   "modeQuick": "\u968F\u673A\u57DF\u540D\uFF08\u9ED8\u8BA4\uFF09",
   "modeNamed": "\u56FA\u5B9A\u57DF\u540D",
   "namedChannelTitle": "\u{1F310} \u56FA\u5B9A\u57DF\u540D Named Tunnel",
-  "namedChannelHint": "\u957F\u671F\u7A33\u5B9A\u5165\u53E3\uFF1B\u4E0E\u968F\u673A\u57DF\u540D\u4E0D\u53EF\u540C\u65F6\u542F\u7528",
-  "namedPinTransition": "\u672C\u901A\u9053\u5F53\u524D\u4ECD\u4F7F\u7528\u4E0B\u65B9\u516C\u7F51\u8BBF\u95EE\u5BC6\u7801\uFF1B\u540E\u7EED\u7248\u672C\u5C06\u6539\u4E3A\u6BCF\u8BBE\u5907\u72EC\u7ACB\u8BA4\u8BC1",
+  "namedChannelHint": "\u957F\u671F\u7A33\u5B9A\u5165\u53E3\uFF1B\u9996\u6B21\u914D\u5BF9\u7531\u7535\u8111\u6279\u51C6\uFF0C\u6BCF\u53F0\u8BBE\u5907\u4F7F\u7528\u72EC\u7ACB\u5BC6\u7801",
   "quickChannelTitle": "\u26A1 \u968F\u673A\u57DF\u540D Quick Tunnel",
   "quickChannelHint": "\u4E34\u65F6\u516C\u7F51\u5165\u53E3\uFF1B\u4E0E\u56FA\u5B9A\u57DF\u540D\u4E0D\u53EF\u540C\u65F6\u542F\u7528",
   "namedConfig": "\u56FA\u5B9A\u57DF\u540D\u914D\u7F6E",
+  "approvedDevices": "\u5DF2\u6279\u51C6\u8BBE\u5907",
+  "addDevice": "\u6DFB\u52A0\u8BBE\u5907",
+  "pairingQrAlt": "\u4E00\u6B21\u6027\u8BBE\u5907\u914D\u5BF9\u4E8C\u7EF4\u7801",
+  "pairingExpires": "\u4E8C\u7EF4\u7801\u548C\u914D\u5BF9\u7533\u8BF7 5 \u5206\u949F\u540E\u5931\u6548",
+  "waitingApproval": "\u7B49\u5F85\u7535\u8111\u6279\u51C6",
+  "approve": "\u5141\u8BB8",
+  "reject": "\u62D2\u7EDD",
+  "revoke": "\u64A4\u9500",
+  "addedAt": "\u6DFB\u52A0",
+  "lastLoginAt": "\u6700\u540E\u767B\u5F55",
+  "neverLoggedIn": "\u4ECE\u672A\u767B\u5F55",
+  "noDevices": "\u5C1A\u672A\u6279\u51C6\u4EFB\u4F55\u8BBE\u5907",
   "namedSummary": "\u56FA\u5B9A\u57DF\u540D\uFF1A{host} \xB7 Token {token}",
   "namedTokenSet": "\u5DF2\u914D\u7F6E",
   "namedTokenMissing": "\u672A\u914D\u7F6E",
@@ -1993,11 +2010,22 @@ var en2 = {
   "modeQuick": "Random URL (default)",
   "modeNamed": "Fixed domain",
   "namedChannelTitle": "\u{1F310} Fixed domain \xB7 Named Tunnel",
-  "namedChannelHint": "Stable long-term access; mutually exclusive with Quick Tunnel",
-  "namedPinTransition": "This channel still uses the public PIN below; device authentication arrives in a later change",
+  "namedChannelHint": "Stable long-term access; each approved device has its own password",
   "quickChannelTitle": "\u26A1 Random domain \xB7 Quick Tunnel",
   "quickChannelHint": "Temporary public access; mutually exclusive with Named Tunnel",
   "namedConfig": "Fixed domain configuration",
+  "approvedDevices": "Approved devices",
+  "addDevice": "Add device",
+  "pairingQrAlt": "One-time device pairing QR code",
+  "pairingExpires": "The QR code and request expire in 5 minutes",
+  "waitingApproval": "Waiting for computer approval",
+  "approve": "Allow",
+  "reject": "Reject",
+  "revoke": "Revoke",
+  "addedAt": "Added",
+  "lastLoginAt": "Last login",
+  "neverLoggedIn": "Never",
+  "noDevices": "No approved devices yet",
   "namedSummary": "Fixed domain: {host} \xB7 Token {token}",
   "namedTokenSet": "configured",
   "namedTokenMissing": "not set",
@@ -2045,8 +2073,10 @@ var styles = {
   qr: { width: 220, height: 220, borderRadius: 10, border: "1px solid var(--dsw-alias-border-l2,#e5e7eb)", margin: "8px 0" },
   warn: { color: "var(--dsw-alias-state-warn-primary,#b45309)", fontSize: 12, lineHeight: 1.5 }
 };
-function PocketSettingsTab({ rpcCall, t }) {
+function PocketSettingsTab({ rpcCall, adminRpcCall, t }) {
   const [status, setStatus] = (0, import_react2.useState)(null);
+  const [deviceAuth, setDeviceAuth] = (0, import_react2.useState)(null);
+  const [pairing, setPairing] = (0, import_react2.useState)(null);
   const [busy, setBusy] = (0, import_react2.useState)(false);
   const [error, setError] = (0, import_react2.useState)(null);
   const [tunnelState, setTunnelState] = (0, import_react2.useState)(null);
@@ -2064,10 +2094,20 @@ function PocketSettingsTab({ rpcCall, t }) {
     if (!res?.ok) throw new Error(res?.error?.message ?? "RPC failed");
     return res.value;
   };
+  const callAdmin = async (endpoint, payload) => {
+    const res = await adminRpcCall(endpoint, payload);
+    if (!res?.ok) throw new Error(res?.error?.message ?? "RPC failed");
+    return res.value;
+  };
   const load = async () => {
     try {
-      const s = await call(POCKET_ENDPOINTS.status, {});
+      const [s, devices] = await Promise.all([
+        call(POCKET_ENDPOINTS.status, {}),
+        // 设备状态走本机 admin 通道：手机/远程访问会失败，此时隐藏设备管理区块。
+        callAdmin(POCKET_ENDPOINTS.deviceStatus, {}).catch(() => null)
+      ]);
       setStatus(s);
+      setDeviceAuth(devices);
       setTunnelState(s.tunnelState ?? null);
       if (s.desktop) setIsDesktop(true);
       if (s.restartNotice) {
@@ -2210,6 +2250,37 @@ function PocketSettingsTab({ rpcCall, t }) {
       setTunnelCfg((c) => ({ ...c, err: err.message }));
     }
   };
+  const startPairing = async () => {
+    try {
+      setPairing(await callAdmin(POCKET_ENDPOINTS.devicePairingStart, {}));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+  const approveDevice = async (id) => {
+    try {
+      setDeviceAuth(await callAdmin(POCKET_ENDPOINTS.deviceApprove, { id }));
+      setPairing(null);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+  const rejectDevice = async (id) => {
+    try {
+      setDeviceAuth(await callAdmin(POCKET_ENDPOINTS.deviceReject, { id }));
+      setPairing(null);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+  const revokeDevice = async (id) => {
+    try {
+      setDeviceAuth(await callAdmin(POCKET_ENDPOINTS.deviceRevoke, { id }));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+  const formatTime = (value) => value ? new Date(value).toLocaleString() : t("neverLoggedIn");
   const [resetOpen, setResetOpen] = (0, import_react2.useState)(false);
   const doFactoryReset = async () => {
     setResetOpen(false);
@@ -2461,7 +2532,7 @@ function PocketSettingsTab({ rpcCall, t }) {
         )
       ) : (0, import_react2.createElement)("div", { style: styles.muted }, t("lanStarting"))
     ),
-    // 固定域名 Named：独立配置与启停。过渡期（PR2 前）仍使用公网访问密码。
+    // 固定域名 Named：独立配置、启停与设备管理。
     (0, import_react2.createElement)(
       "div",
       { style: styles.block },
@@ -2498,22 +2569,38 @@ function PocketSettingsTab({ rpcCall, t }) {
         tunnelCfg.err ? (0, import_react2.createElement)("div", { style: { color: "var(--dsw-alias-state-error-primary,#dc2626)", marginTop: 4 } }, errText(tunnelCfg.err)) : null
       ) : null,
       tunnelUrl && activeNamedMode ? qrArea(status.tunnelQr, tunnelUrl, t("namedRunningHint")) : null,
-      // 过渡提示：设备认证在下一个 PR 落地
-      (0, import_react2.createElement)("div", { style: { ...styles.warn, marginTop: 8 } }, t("namedPinTransition")),
-      // 认证过渡期：Named 沿用公网访问密码
-      status?.accessToken ? row(
-        t("pinLabel"),
-        customPin?.which === "public" ? null : (0, import_react2.createElement)(
-          "span",
-          { style: { display: "inline-flex", alignItems: "center", gap: 8 } },
-          (0, import_react2.createElement)("span", { style: { fontFamily: "ui-monospace,Menlo,monospace", fontSize: 13, letterSpacing: 1 } }, status?.accessToken),
-          customBtn("public")
-        ),
+      // 设备管理仅电脑本机可用（admin 通道）；远程页面加载不到 deviceStatus 时整块隐藏。
+      deviceAuth ? row(
+        t("approvedDevices"),
+        (0, import_react2.createElement)("button", { style: { ...styles.btn, height: 28, padding: "0 12px", fontSize: 12 }, onClick: startPairing }, t("addDevice")),
         (0, import_react2.createElement)(
           "div",
-          { style: { marginTop: 6 } },
-          customPin?.which === "public" ? customPinRow("public") : null,
-          status?.publicPinCustom ? (0, import_react2.createElement)("div", { style: { ...styles.warn } }, t("pinCustomHint")) : null
+          { style: { marginTop: 8 } },
+          pairing ? (0, import_react2.createElement)(
+            "div",
+            { style: { textAlign: "center", background: "var(--dsw-alias-bg-layer-2,#f3f4f6)", padding: 10, borderRadius: 8 } },
+            (0, import_react2.createElement)("img", { src: pairing.qr, alt: t("pairingQrAlt"), style: styles.qr }),
+            (0, import_react2.createElement)("div", { style: styles.muted }, t("pairingExpires"))
+          ) : null,
+          ...(deviceAuth?.pending ?? []).map((item) => (0, import_react2.createElement)(
+            "div",
+            { key: item.id, style: { marginTop: 8, padding: 8, border: "1px solid var(--dsw-alias-state-warn-primary,#b45309)", borderRadius: 8 } },
+            (0, import_react2.createElement)("div", { style: { fontSize: 13, fontWeight: 600 } }, item.name),
+            (0, import_react2.createElement)("div", { style: styles.muted }, t("waitingApproval")),
+            (0, import_react2.createElement)(
+              "div",
+              { style: { display: "flex", gap: 8, marginTop: 6 } },
+              (0, import_react2.createElement)("button", { style: { ...styles.primary, height: 28 }, onClick: () => approveDevice(item.id) }, t("approve")),
+              (0, import_react2.createElement)("button", { style: { ...styles.btn, height: 28 }, onClick: () => rejectDevice(item.id) }, t("reject"))
+            )
+          )),
+          ...(deviceAuth?.devices ?? []).map((item) => (0, import_react2.createElement)(
+            "div",
+            { key: item.id, style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "8px 0", borderTop: "1px solid var(--dsw-alias-border-l2,#e5e7eb)" } },
+            (0, import_react2.createElement)("div", null, (0, import_react2.createElement)("div", { style: { fontSize: 13 } }, item.name), (0, import_react2.createElement)("div", { style: styles.muted }, `${t("addedAt")} ${formatTime(item.createdAt)} \xB7 ${t("lastLoginAt")} ${formatTime(item.lastLoginAt)}`)),
+            (0, import_react2.createElement)("button", { style: { ...styles.btn, height: 28, color: "var(--dsw-alias-state-error-primary,#dc2626)" }, onClick: () => revokeDevice(item.id) }, t("revoke"))
+          )),
+          !deviceAuth?.devices?.length && !deviceAuth?.pending?.length ? (0, import_react2.createElement)("div", { style: styles.muted }, t("noDevices")) : null
         )
       ) : null
     ),
@@ -2651,7 +2738,7 @@ function apply(ctx) {
         id: "pocket",
         order: 1,
         label: () => translate("section"),
-        inject: () => ({ rpcCall, t: translate })
+        inject: () => ({ rpcCall, adminRpcCall, t: translate })
       },
       PocketSettingsTab
     )

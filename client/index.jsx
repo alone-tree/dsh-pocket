@@ -9,7 +9,7 @@
 
 import { createElement as h, useEffect, useRef, useState } from 'react';
 
-import { POCKET_RPC_CHANNEL, POCKET_ENDPOINTS, redactStatus, compareVersions } from './api.js';
+import { POCKET_RPC_CHANNEL, POCKET_ADMIN_RPC_CHANNEL, POCKET_ENDPOINTS, redactStatus, compareVersions } from './api.js';
 import { mobileApply } from './mobile/mobile-apply.tsx';
 import { NS as POCKET_NS, zh as POCKET_ZH, en as POCKET_EN } from './pocket-locales.js';
 
@@ -44,8 +44,10 @@ const styles = {
   warn: { color: 'var(--dsw-alias-state-warn-primary,#b45309)', fontSize: 12, lineHeight: 1.5 },
 };
 
-function PocketSettingsTab({ rpcCall, t }) {
+function PocketSettingsTab({ rpcCall, adminRpcCall, t }) {
   const [status, setStatus] = useState(null);
+  const [deviceAuth, setDeviceAuth] = useState(null);
+  const [pairing, setPairing] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [tunnelState, setTunnelState] = useState(null); // 隧道进度 {phase, detail, startedAt}
@@ -66,11 +68,21 @@ function PocketSettingsTab({ rpcCall, t }) {
     if (!res?.ok) throw new Error(res?.error?.message ?? 'RPC failed');
     return res.value;
   };
+  const callAdmin = async (endpoint, payload) => {
+    const res = await adminRpcCall(endpoint, payload);
+    if (!res?.ok) throw new Error(res?.error?.message ?? 'RPC failed');
+    return res.value;
+  };
 
   const load = async () => {
     try {
-      const s = await call(POCKET_ENDPOINTS.status, {});
+      const [s, devices] = await Promise.all([
+        call(POCKET_ENDPOINTS.status, {}),
+        // 设备状态走本机 admin 通道：手机/远程访问会失败，此时隐藏设备管理区块。
+        callAdmin(POCKET_ENDPOINTS.deviceStatus, {}).catch(() => null),
+      ]);
       setStatus(s);
+      setDeviceAuth(devices);
       setTunnelState(s.tunnelState ?? null);
       if (s.desktop) setIsDesktop(true);
       if (s.restartNotice) {
@@ -224,6 +236,24 @@ function PocketSettingsTab({ rpcCall, t }) {
       setTunnelCfg((c) => ({ ...c, err: err.message }));
     }
   };
+
+  const startPairing = async () => {
+    try { setPairing(await callAdmin(POCKET_ENDPOINTS.devicePairingStart, {})); }
+    catch (err) { setError(err.message); }
+  };
+  const approveDevice = async (id) => {
+    try { setDeviceAuth(await callAdmin(POCKET_ENDPOINTS.deviceApprove, { id })); setPairing(null); }
+    catch (err) { setError(err.message); }
+  };
+  const rejectDevice = async (id) => {
+    try { setDeviceAuth(await callAdmin(POCKET_ENDPOINTS.deviceReject, { id })); setPairing(null); }
+    catch (err) { setError(err.message); }
+  };
+  const revokeDevice = async (id) => {
+    try { setDeviceAuth(await callAdmin(POCKET_ENDPOINTS.deviceRevoke, { id })); }
+    catch (err) { setError(err.message); }
+  };
+  const formatTime = (value) => value ? new Date(value).toLocaleString() : t('neverLoggedIn');
 
   // 恢复出厂设置：清本机设置 + 重设随机密码（弹窗确认；RPC 端也强制校验 confirm）
   const [resetOpen, setResetOpen] = useState(false);
@@ -463,7 +493,7 @@ function PocketSettingsTab({ rpcCall, t }) {
           : h('div', { style: styles.muted }, t('lanStarting'))),
     ),
 
-    // 固定域名 Named：独立配置与启停。过渡期（PR2 前）仍使用公网访问密码。
+    // 固定域名 Named：独立配置、启停与设备管理。
     h('div', { style: styles.block },
       h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
         h('div', null,
@@ -485,18 +515,22 @@ function PocketSettingsTab({ rpcCall, t }) {
         h('div', { style: { ...styles.muted, marginTop: 6 } }, t('namedHow')),
         tunnelCfg.err ? h('div', { style: { color: 'var(--dsw-alias-state-error-primary,#dc2626)', marginTop: 4 } }, errText(tunnelCfg.err)) : null) : null,
       tunnelUrl && activeNamedMode ? qrArea(status.tunnelQr, tunnelUrl, t('namedRunningHint')) : null,
-      // 过渡提示：设备认证在下一个 PR 落地
-      h('div', { style: { ...styles.warn, marginTop: 8 } }, t('namedPinTransition')),
-      // 认证过渡期：Named 沿用公网访问密码
-      status?.accessToken ? row(t('pinLabel'),
-        customPin?.which === 'public'
-          ? null
-          : h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 8 } },
-            h('span', { style: { fontFamily: 'ui-monospace,Menlo,monospace', fontSize: 13, letterSpacing: 1 } }, status?.accessToken),
-            customBtn('public')),
-        h('div', { style: { marginTop: 6 } },
-          customPin?.which === 'public' ? customPinRow('public') : null,
-          status?.publicPinCustom ? h('div', { style: { ...styles.warn } }, t('pinCustomHint')) : null)) : null,
+      // 设备管理仅电脑本机可用（admin 通道）；远程页面加载不到 deviceStatus 时整块隐藏。
+      deviceAuth ? row(t('approvedDevices'), h('button', { style: { ...styles.btn, height: 28, padding: '0 12px', fontSize: 12 }, onClick: startPairing }, t('addDevice')),
+        h('div', { style: { marginTop: 8 } },
+          pairing ? h('div', { style: { textAlign: 'center', background: 'var(--dsw-alias-bg-layer-2,#f3f4f6)', padding: 10, borderRadius: 8 } },
+            h('img', { src: pairing.qr, alt: t('pairingQrAlt'), style: styles.qr }),
+            h('div', { style: styles.muted }, t('pairingExpires'))) : null,
+          ...(deviceAuth?.pending ?? []).map((item) => h('div', { key: item.id, style: { marginTop: 8, padding: 8, border: '1px solid var(--dsw-alias-state-warn-primary,#b45309)', borderRadius: 8 } },
+            h('div', { style: { fontSize: 13, fontWeight: 600 } }, item.name),
+            h('div', { style: styles.muted }, t('waitingApproval')),
+            h('div', { style: { display: 'flex', gap: 8, marginTop: 6 } },
+              h('button', { style: { ...styles.primary, height: 28 }, onClick: () => approveDevice(item.id) }, t('approve')),
+              h('button', { style: { ...styles.btn, height: 28 }, onClick: () => rejectDevice(item.id) }, t('reject'))))),
+          ...(deviceAuth?.devices ?? []).map((item) => h('div', { key: item.id, style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: '8px 0', borderTop: '1px solid var(--dsw-alias-border-l2,#e5e7eb)' } },
+            h('div', null, h('div', { style: { fontSize: 13 } }, item.name), h('div', { style: styles.muted }, `${t('addedAt')} ${formatTime(item.createdAt)} · ${t('lastLoginAt')} ${formatTime(item.lastLoginAt)}`)),
+            h('button', { style: { ...styles.btn, height: 28, color: 'var(--dsw-alias-state-error-primary,#dc2626)' }, onClick: () => revokeDevice(item.id) }, t('revoke')))),
+          !(deviceAuth?.devices?.length) && !(deviceAuth?.pending?.length) ? h('div', { style: styles.muted }, t('noDevices')) : null)) : null,
     ),
 
     // 随机域名 Quick：独立启停与共享密码。
@@ -615,7 +649,7 @@ export function apply(ctx) {
         id: 'pocket',
         order: 1,
         label: () => translate('section'),
-        inject: () => ({ rpcCall, t: translate }),
+        inject: () => ({ rpcCall, adminRpcCall, t: translate }),
       },
       PocketSettingsTab,
     ),
