@@ -175,15 +175,13 @@ function PocketSettingsTab({ rpcCall, adminRpcCall, t }) {
     }
   };
 
-  // 安全免责声明（issue #31）：每次开启公网都必须先弹框勾选「我已知情」。
-  // 服务端同样强制（tunnel.start 需 disclaimer: true），防绕过前端直接调 RPC。
-
-  const [disclaimerOpen, setDisclaimerOpen] = useState(false);
+  // 安全声明（issue #31，三通道分文案）：开启任一通道前必须先弹框勾选「我已知情」。
+  // Quick/Named 服务端同样强制（tunnel.start 需 disclaimer: true），防绕过前端直接调 RPC。
+  // disclaimerMode: 'lan' | 'quick' | 'named' | null
+  const [disclaimerMode, setDisclaimerMode] = useState(null);
   const [disclaimerChecked, setDisclaimerChecked] = useState(false);
-  const [requestedTunnelMode, setRequestedTunnelMode] = useState(null);
 
-  const doStartTunnel = async () => {
-    const mode = requestedTunnelMode ?? status?.tunnelConfig?.mode ?? 'quick';
+  const doStartTunnel = async (mode) => {
     setBusy(true);
     setError(null);
     try {
@@ -202,19 +200,27 @@ function PocketSettingsTab({ rpcCall, adminRpcCall, t }) {
     } catch (err) {
       setError(err.message);
     } finally {
-      setRequestedTunnelMode(null);
       setBusy(false);
     }
   };
   const startTunnel = (mode) => {
-    setRequestedTunnelMode(mode);
+    setDisclaimerMode(mode);
     setDisclaimerChecked(false);
-    setDisclaimerOpen(true);
   };
-  const confirmDisclaimer = () => {
-    if (!disclaimerChecked) return; // 未勾选不允许
-    setDisclaimerOpen(false);
-    doStartTunnel();
+  const confirmDisclaimer = async () => {
+    const mode = disclaimerMode;
+    if (!disclaimerChecked || !mode) return; // 未勾选不允许
+    setDisclaimerMode(null);
+    if (mode === 'lan') {
+      try {
+        const r = await call(POCKET_ENDPOINTS.lanSetEnabled, { on: true });
+        setStatus((s) => ({ ...s, lanEnabled: r.lanEnabled }));
+      } catch (err) {
+        setError(err.message);
+      }
+      return;
+    }
+    doStartTunnel(mode);
   };
 
   const stopTunnel = async () => {
@@ -292,15 +298,16 @@ function PocketSettingsTab({ rpcCall, adminRpcCall, t }) {
   };
 
   // 局域网访问总开关：关闭后局域网扫码/链接直接失效（公网不受影响）。
-  // 切换前弹窗确认（弹窗提醒）；服务端用 setLanEnabled 持久化，代理按 Host 实时拦截。
-  const [lanToggleOpen, setLanToggleOpen] = useState(null); // null | true | false（目标 on 状态）
-  const requestLanToggle = (on) => setLanToggleOpen(on);
+  // 开启走三通道声明弹窗（勾选确认）；关闭仍用简单确认框。服务端用 setLanEnabled 持久化，代理按 Host 实时拦截。
+  const [lanToggleOpen, setLanToggleOpen] = useState(null); // null | false（仅关闭方向）
+  const requestLanToggle = (on) => {
+    if (on) { setDisclaimerMode('lan'); setDisclaimerChecked(false); }
+    else setLanToggleOpen(false);
+  };
   const confirmLanToggle = async () => {
-    const on = lanToggleOpen;
     setLanToggleOpen(null);
-    if (on === null) return;
     try {
-      const r = await call(POCKET_ENDPOINTS.lanSetEnabled, { on });
+      const r = await call(POCKET_ENDPOINTS.lanSetEnabled, { on: false });
       setStatus((s) => ({ ...s, lanEnabled: r.lanEnabled }));
     } catch (err) {
       setError(err.message);
@@ -574,11 +581,11 @@ function PocketSettingsTab({ rpcCall, adminRpcCall, t }) {
       style: { position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 10001, width: 'auto', maxWidth: 280, background: 'rgba(17,24,39,.92)', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 16px', fontSize: 13, lineHeight: 1.5, textAlign: 'center', boxShadow: '0 8px 24px rgba(0,0,0,.22)' },
     }, toast) : null,
 
-    // 局域网访问开关确认弹框（关闭/打开时弹窗提醒）
-    lanToggleOpen !== null ? h('div', { style: { position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 } },
+    // 局域网访问关闭确认弹框（开启方向走三通道声明弹窗）
+    lanToggleOpen === false ? h('div', { style: { position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 } },
       h('div', { style: { background: 'var(--dsw-alias-bg-layer-1,#fff)', borderRadius: 12, maxWidth: 420, width: '100%', padding: '20px 22px', boxShadow: '0 8px 32px rgba(0,0,0,.18)' } },
-        h('div', { style: { fontWeight: 600, fontSize: 15, color: lanToggleOpen ? 'var(--dsw-alias-brand-primary,#4f6ef7)' : 'var(--dsw-alias-state-warn-primary,#b45309)', marginBottom: 10 } }, t(lanToggleOpen ? 'lanToggleTitleOn' : 'lanToggleTitleOff')),
-        h('div', { style: { fontSize: 13, lineHeight: 1.7, color: 'var(--dsw-alias-label-primary,inherit)' } }, t(lanToggleOpen ? 'lanToggleBodyOn' : 'lanToggleBodyOff')),
+        h('div', { style: { fontWeight: 600, fontSize: 15, color: 'var(--dsw-alias-state-warn-primary,#b45309)', marginBottom: 10 } }, t('lanToggleTitleOff')),
+        h('div', { style: { fontSize: 13, lineHeight: 1.7, color: 'var(--dsw-alias-label-primary,inherit)' } }, t('lanToggleBodyOff')),
         h('div', { style: { display: 'flex', gap: 8, marginTop: 16 } },
           h('button', { style: { ...styles.btn, flex: 1 }, onClick: () => setLanToggleOpen(null) }, t('cancel')),
           h('button', { style: { ...styles.primary, flex: 1 }, onClick: confirmLanToggle }, t('confirm')),
@@ -586,17 +593,17 @@ function PocketSettingsTab({ rpcCall, adminRpcCall, t }) {
       ),
     ) : null,
 
-    // 安全免责声明弹框（issue #31）：每次开启公网访问前确认
-    disclaimerOpen ? h('div', { style: { position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 } },
+    // 通道安全声明弹框：按即将开启的通道显示对应文案（lan/quick/named）
+    disclaimerMode ? h('div', { style: { position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 } },
       h('div', { style: { background: 'var(--dsw-alias-bg-layer-1,#fff)', borderRadius: 12, maxWidth: 420, width: '100%', padding: '20px 22px', boxShadow: '0 8px 32px rgba(0,0,0,.18)' } },
-        h('div', { style: { fontWeight: 600, fontSize: 15, color: 'var(--dsw-alias-state-warn-primary,#b45309)', marginBottom: 10 } }, t('disclaimerTitle')),
-        h('div', { style: { fontSize: 13, lineHeight: 1.7, color: 'var(--dsw-alias-label-primary,inherit)' } }, t('disclaimerBody')),
+        h('div', { style: { fontWeight: 600, fontSize: 15, color: 'var(--dsw-alias-state-warn-primary,#b45309)', marginBottom: 10 } }, t(disclaimerMode === 'lan' ? 'lanDisclaimerTitle' : disclaimerMode === 'named' ? 'namedDisclaimerTitle' : 'quickDisclaimerTitle')),
+        h('div', { style: { fontSize: 13, lineHeight: 1.7, color: 'var(--dsw-alias-label-primary,inherit)', whiteSpace: 'pre-line' } }, t(disclaimerMode === 'lan' ? 'lanDisclaimerBody' : disclaimerMode === 'named' ? 'namedDisclaimerBody' : 'quickDisclaimerBody')),
         h('label', { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, fontSize: 13, cursor: 'pointer' } },
           h('input', { type: 'checkbox', checked: disclaimerChecked, onChange: (e) => setDisclaimerChecked(e.target.checked), style: { width: 16, height: 16 } }),
           t('disclaimerAgree'),
         ),
         h('div', { style: { display: 'flex', gap: 8, marginTop: 16 } },
-          h('button', { style: { ...styles.btn, flex: 1 }, onClick: () => setDisclaimerOpen(false) }, t('cancel')),
+          h('button', { style: { ...styles.btn, flex: 1 }, onClick: () => setDisclaimerMode(null) }, t('cancel')),
           h('button', {
             style: { ...styles.primary, flex: 1, opacity: disclaimerChecked ? 1 : .5 },
             disabled: !disclaimerChecked,

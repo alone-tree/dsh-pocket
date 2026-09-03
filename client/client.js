@@ -1866,8 +1866,8 @@ var zh2 = {
   "lanDisabledHint": "\u{1F512} \u5C40\u57DF\u7F51\u8BBF\u95EE\u5DF2\u5173\u95ED\uFF1A\u624B\u673A\u626B\u7801/\u94FE\u63A5\u5747\u4E0D\u53EF\u7528\uFF08\u516C\u7F51\u4E0D\u53D7\u5F71\u54CD\uFF09\u3002\u70B9\u300C\u5F00\u300D\u6062\u590D\u3002",
   "lanToggleTitleOff": "\u5173\u95ED\u5C40\u57DF\u7F51\u8BBF\u95EE",
   "lanToggleBodyOff": "\u5173\u95ED\u540E\uFF0C\u540C\u4E00 WiFi \u4E0B\u7684\u624B\u673A\u5C06\u65E0\u6CD5\u626B\u7801\u8BBF\u95EE\uFF08\u5C40\u57DF\u7F51\u4E8C\u7EF4\u7801/\u94FE\u63A5\u7ACB\u5373\u5931\u6548\uFF09\u3002\u516C\u7F51\u8BBF\u95EE\u4E0D\u53D7\u5F71\u54CD\u3002\u786E\u5B9A\u5173\u95ED\uFF1F",
-  "lanToggleTitleOn": "\u5F00\u542F\u5C40\u57DF\u7F51\u8BBF\u95EE",
-  "lanToggleBodyOn": "\u5F00\u542F\u540E\uFF0C\u540C\u4E00 WiFi \u7684\u624B\u673A\u626B\u7801\u5373\u53EF\u8BBF\u95EE\uFF08\u9ED8\u8BA4\u9700\u8F93\u5165\u5C40\u57DF\u7F51\u5BC6\u7801\uFF09\u3002\u786E\u5B9A\u5F00\u542F\uFF1F",
+  "lanDisclaimerTitle": "\u{1F4F6} \u5F00\u542F\u5C40\u57DF\u7F51\u8BBF\u95EE",
+  "lanDisclaimerBody": "\u2460 \u540C\u4E00 WiFi \u5185\u7684\u4EFB\u4F55\u8BBE\u5907\u90FD\u53EF\u5C1D\u8BD5\u8BBF\u95EE\uFF08\u516C\u53F8\u3001\u516C\u5171 WiFi \u4E0B\u5305\u62EC\u540C\u4E8B\u548C\u964C\u751F\u4EBA\uFF09\n\u2461 \u8FDE\u63A5\u4E3A HTTP \u660E\u6587\uFF1A\u5BC6\u7801\u548C\u9875\u9762\u5185\u5BB9\u5728\u5C40\u57DF\u7F51\u5185\u53EF\u88AB\u76D1\u542C\n\u2462 \u8BF7\u4FDD\u6301\u300C\u5C40\u57DF\u7F51\u8BBF\u95EE\u5BC6\u7801\u300D\u5F00\u542F\uFF0C\u4EC5\u5728\u53EF\u4FE1\u7F51\u7EDC\u4F7F\u7528\uFF1B\u4E0D\u53EF\u4FE1\u7F51\u7EDC\uFF08\u4F8B\u5982\u516C\u5171\u56FE\u4E66\u9986\u3001\u5496\u5561\u5E97\u7B49\uFF09\u8BF7\u8C28\u614E\u4F7F\u7528\n\u2463 \u5730\u5740\u968F\u7535\u8111 IP \u53D8\u5316\uFF0C\u4EE5\u8BBE\u7F6E\u9875\u5F53\u524D\u4E8C\u7EF4\u7801\u4E3A\u51C6",
   "confirm": "\u786E\u5B9A",
   "lanAddress": "\u5C40\u57DF\u7F51\u5730\u5740",
   "lanAddressAuto": "\u81EA\u52A8\uFF08\u63A8\u8350\uFF09",
@@ -1924,10 +1924,12 @@ var zh2 = {
   "namedNeedCfg": "\u8BF7\u5148\u586B\u5199\u56FA\u5B9A\u57DF\u540D\u4E0E Tunnel Token",
   "namedRunningHint": "\u56FA\u5B9A\u57DF\u540D\uFF08Cloudflare \u547D\u540D\u96A7\u9053\uFF09\u2014\u2014\u5730\u5740\u4E0D\u968F\u91CD\u542F\u53D8\u5316",
   "namedTakeEffect": "\u5DF2\u4FDD\u5B58\u56FA\u5B9A\u57DF\u540D\u914D\u7F6E\u2014\u2014\u9700\u5173\u95ED\u5E76\u91CD\u65B0\u5F00\u542F\u516C\u7F51\u8BBF\u95EE\u540E\u751F\u6548",
-  "disclaimerTitle": "\u26A0\uFE0F \u5B89\u5168\u514D\u8D23\u58F0\u660E",
-  "disclaimerBody": "\u5F00\u542F\u516C\u7F51 = \u628A\u672C\u673A DSH\uFF08\u80FD\u6267\u884C\u4EE3\u7801\uFF09\u66B4\u9732\u5230\u4E92\u8054\u7F51\u3002\u4EFB\u4F55\u4EBA\u62FF\u5230\u516C\u7F51\u94FE\u63A5\u548C\u5BC6\u7801\uFF0C\u90FD\u80FD\u8BBF\u95EE\u751A\u81F3\u64CD\u4F5C\u4F60\u7684\u7535\u8111\u3002\u8BF7\u786E\u8BA4\uFF1A\u2460 \u4F7F\u7528\u81EA\u5B9A\u4E49\u5F3A\u5BC6\u7801\u6216\u59A5\u5584\u4FDD\u7BA1\u81EA\u52A8\u5BC6\u7801\uFF1B\u2461 \u7528\u5B8C\u7ACB\u5373\u300C\u5173\u95ED\u516C\u7F51\u300D\uFF1B\u2462 \u516C\u53F8/\u6D89\u5BC6\u7F51\u7EDC\u8BF7\u5148\u786E\u8BA4\u5408\u89C4\u3002",
   "disclaimerAgree": "\u6211\u5DF2\u77E5\u60C5\uFF0C\u540C\u610F\u5F00\u542F",
   "disclaimerHint": "\u8BF7\u52FE\u9009\u300C\u6211\u5DF2\u77E5\u60C5\u300D\u540E\u518D\u5F00\u542F\u516C\u7F51",
+  "quickDisclaimerTitle": "\u26A0\uFE0F \u5F00\u542F\u968F\u673A\u57DF\u540D\u516C\u7F51\u8BBF\u95EE",
+  "quickDisclaimerBody": "\u2460 \u4E34\u65F6\u8FDE\u63A5\u7531 Cloudflare \u81EA\u52A8\u5206\u914D\uFF0C\u65AD\u5F00\u540E\u56DE\u6536\u518D\u5206\u914D\u3002\u516C\u53F8/\u6D89\u5BC6\u7F51\u7EDC\u5148\u786E\u8BA4\u5408\u89C4\uFF1B\u6D41\u91CF\u7ECF Cloudflare \u4E2D\u8F6C\u3002\n\u2461 \u56E0\u6B64\uFF0C\u4F60\u7684\u94FE\u63A5\u53EF\u80FD\u4E4B\u524D\u662F\u522B\u4EBA\u7528\u8FC7\u7684\uFF0C\u522B\u4EBA\u6709\u53EF\u80FD\u987A\u7740\u4ED6\u7684\u5386\u53F2\u8BB0\u5F55\u8BBF\u95EE\u5230\u4F60\u7684\u7535\u8111\uFF1B\u4F60\u7684\u94FE\u63A5\u88AB\u56DE\u6536\u540E\uFF0C\u4E5F\u53EF\u80FD\u4F1A\u88AB\u5206\u914D\u5230\u5176\u4ED6\u7684\u7F51\u7AD9\u3002\n\u2462 \u62FF\u5230\u94FE\u63A5 + \u8BBF\u95EE\u5BC6\u7801\u7684\u4EFB\u4F55\u4EBA\u90FD\u80FD\u64CD\u4F5C\u8FD9\u53F0\u7535\u8111\uFF0C\u8BF7\u52A1\u5FC5\u4F7F\u7528\u5B89\u5168\u53EF\u9760\u7684\u5BC6\u7801\uFF0C\u5E76\u5728\u4F7F\u7528\u5B8C\u6BD5\u540E\u53CA\u65F6\u5173\u95ED\u3002\n\u2463 \u94FE\u63A5\u4EC5\u672C\u6B21\u5F00\u542F\u671F\u95F4\u6709\u6548\uFF0C\u5173\u95ED/\u91CD\u542F\u540E\u5931\u6548\uFF0C\u52FF\u6536\u85CF\uFF0C\u6BCF\u6B21\u4ECE\u672C\u9875\u626B\u5F53\u524D\u4E8C\u7EF4\u7801\u3002\u5982\u9700\u957F\u671F\u4F7F\u7528\u8BF7\u5F00\u542F\u56FA\u5B9A\u57DF\u540D\u8BBF\u95EE\u901A\u9053\u3002",
+  "namedDisclaimerTitle": "\u{1F310} \u5F00\u542F\u56FA\u5B9A\u57DF\u540D\u516C\u7F51\u8BBF\u95EE",
+  "namedDisclaimerBody": "\u2460 \u5165\u53E3\u957F\u671F\u6709\u6548\u4E14\u53EF\u88AB\u626B\u63CF\uFF1A\u4EFB\u4F55\u964C\u751F\u4EBA\u90FD\u80FD\u6253\u5F00\u6B64\u57DF\u540D\uFF0C\u4F46\u53EA\u6709\u5DF2\u914D\u5BF9\u8BBE\u5907 + \u8BBE\u5907\u5BC6\u7801\u8BA4\u8BC1\u624D\u80FD\u8FDB\u5165\u3002\n\u2461 \u8BBE\u5907\u51ED\u636E\u4FDD\u5B58\u5728\u6D4F\u89C8\u5668 Cookie\u3001\u957F\u671F\u6709\u6548\uFF1A\u8BBE\u5907\u4E22\u5931\u3001\u8F6C\u624B\u6216\u9001\u4FEE\u524D\uFF0C\u5148\u5728\u300C\u5DF2\u6279\u51C6\u8BBE\u5907\u300D\u4E2D\u64A4\u9500\u5E76\u6E05\u7406\u624B\u673A\u6D4F\u89C8\u5668 Cookie\u3002\n\u2462 \u8BF7\u4FDD\u7BA1\u597D Cloudflare Tunnel Token\uFF08\u6CC4\u9732 = \u5165\u53E3\u88AB\u63A5\u7BA1\uFF09\uFF1B\u6D41\u91CF\u7ECF Cloudflare \u4E2D\u8F6C\u3002\n\u2463 \u767B\u5F55/\u914D\u5BF9\u5165\u53E3\u6709\u9632\u7206\u7834\u9650\u5236\uFF1B\u53D1\u73B0\u5F02\u5E38\u767B\u5F55\u8BB0\u5F55\u8BF7\u7ACB\u5373\u64A4\u9500\u5BF9\u5E94\u8BBE\u5907\u3002",
   "downloading": "\u23F3 \u4E0B\u8F7D cloudflared\uFF08\u9996\u6B21\u7EA6 20-50MB\uFF0C\u901A\u5E38 1-2 \u5206\u949F\uFF1B\u4E4B\u540E\u79D2\u5F00\uFF09\xB7 \u5DF2\u7B49\u5F85 {s} \u79D2",
   "connecting": "\u23F3 \u8FDE\u63A5 Cloudflare \u8FB9\u7F18\uFF08\u901A\u5E38 5-30 \u79D2\uFF09\xB7 \u5DF2\u7B49\u5F85 {s} \u79D2{suffix}",
   "slowHint": " \u2014 \u6709\u70B9\u4E45\uFF1F\u68C0\u67E5\u662F\u5426\u5F00\u7740\u4EE3\u7406/VPN\uFF08Clash TUN \u7B49\uFF09",
@@ -1979,8 +1981,8 @@ var en2 = {
   "lanDisabledHint": '\u{1F512} LAN access is off \u2014 the QR code and link are unavailable (public access is unaffected). Tap "On" to restore.',
   "lanToggleTitleOff": "Turn off LAN access",
   "lanToggleBodyOff": "Once off, phones on the same Wi-Fi can no longer scan to connect (the LAN QR code and link stop working immediately). Public access is unaffected. Turn it off?",
-  "lanToggleTitleOn": "Turn on LAN access",
-  "lanToggleBodyOn": "Once on, phones on the same Wi-Fi can scan to connect (a LAN PIN is required by default). Turn it on?",
+  "lanDisclaimerTitle": "\u{1F4F6} Enable LAN access",
+  "lanDisclaimerBody": '\u2460 Any device on the same Wi-Fi can attempt access (coworkers and strangers on office/public networks)\n\u2461 The connection is plain HTTP: the PIN and page content can be sniffed inside the LAN\n\u2462 Keep "LAN access PIN" on and use it only on trusted networks; be careful on untrusted ones (public libraries, caf\xE9s, etc.)\n\u2463 The address changes with the computer IP \u2014 use the current QR code on this page',
   "confirm": "Confirm",
   "lanAddress": "LAN address",
   "lanAddressAuto": "Auto (recommended)",
@@ -2037,10 +2039,12 @@ var en2 = {
   "namedNeedCfg": "Set the fixed domain and Tunnel Token first",
   "namedRunningHint": "Fixed domain (Cloudflare named tunnel) \u2014 the URL no longer changes on restart",
   "namedTakeEffect": "Fixed-domain config saved \u2014 turn public access off and on again to take effect",
-  "disclaimerTitle": "\u26A0\uFE0F Security disclaimer",
-  "disclaimerBody": "Enabling public access exposes this computer\u2019s DSH (which can execute code) to the internet. Anyone with the public link and PIN can reach \u2014 and operate \u2014 your computer. Please confirm: \u2460 use a strong custom PIN or keep the auto-generated one safe; \u2461 turn public access OFF as soon as you\u2019re done; \u2462 on a corporate/classified network, confirm compliance first.",
   "disclaimerAgree": "I understand and agree",
-  "disclaimerHint": 'Check "I understand" before enabling public access',
+  "disclaimerHint": 'Check "I understand" before enabling',
+  "quickDisclaimerTitle": "\u26A0\uFE0F Enable random-domain public access",
+  "quickDisclaimerBody": "\u2460 The temporary URL is auto-assigned by Cloudflare and recycled after it disconnects. Confirm compliance first on corporate/classified networks; traffic is relayed via Cloudflare.\n\u2461 Your link may therefore have been used by someone else before \u2014 they might reach this computer through their history; once recycled, your URL may also be reassigned to unrelated sites.\n\u2462 Anyone with the link + PIN can operate this computer. Use a strong, reliable PIN and turn access off promptly when you are done.\n\u2463 The link is valid only for this session; it dies on close/restart. Do not bookmark it \u2014 scan the current QR code from this page each time. For long-term use, enable the Named Tunnel channel instead.",
+  "namedDisclaimerTitle": "\u{1F310} Enable fixed-domain public access",
+  "namedDisclaimerBody": '\u2460 The entry is long-lived and scannable: anyone can open this domain, but only paired devices with device-password authentication can get in.\n\u2461 Device credentials live in browser cookies long-term: before a device is lost, transferred or sent for repair, revoke it under "Approved devices" and clear the browser cookies on the phone.\n\u2462 Guard the Cloudflare Tunnel Token (a leak means the entry is taken over); traffic is relayed via Cloudflare.\n\u2463 Login/pairing endpoints are brute-force limited; revoke the device immediately if you notice unusual login records.',
   "downloading": "\u23F3 Downloading cloudflared (first run ~20-50MB, usually 1-2 min; instant afterward) \xB7 {s}s elapsed",
   "connecting": "\u23F3 Connecting to Cloudflare edge (usually 5-30s) \xB7 {s}s elapsed{suffix}",
   "slowHint": " \u2014 taking long? Check for a proxy/VPN (e.g., Clash TUN)",
@@ -2193,11 +2197,9 @@ function PocketSettingsTab({ rpcCall, adminRpcCall, t }) {
       setUpdateInfo((u) => ({ ...u, updating: false, result: "fail", output: err.message }));
     }
   };
-  const [disclaimerOpen, setDisclaimerOpen] = (0, import_react2.useState)(false);
+  const [disclaimerMode, setDisclaimerMode] = (0, import_react2.useState)(null);
   const [disclaimerChecked, setDisclaimerChecked] = (0, import_react2.useState)(false);
-  const [requestedTunnelMode, setRequestedTunnelMode] = (0, import_react2.useState)(null);
-  const doStartTunnel = async () => {
-    const mode = requestedTunnelMode ?? status?.tunnelConfig?.mode ?? "quick";
+  const doStartTunnel = async (mode) => {
     setBusy(true);
     setError(null);
     try {
@@ -2216,19 +2218,27 @@ function PocketSettingsTab({ rpcCall, adminRpcCall, t }) {
     } catch (err) {
       setError(err.message);
     } finally {
-      setRequestedTunnelMode(null);
       setBusy(false);
     }
   };
   const startTunnel = (mode) => {
-    setRequestedTunnelMode(mode);
+    setDisclaimerMode(mode);
     setDisclaimerChecked(false);
-    setDisclaimerOpen(true);
   };
-  const confirmDisclaimer = () => {
-    if (!disclaimerChecked) return;
-    setDisclaimerOpen(false);
-    doStartTunnel();
+  const confirmDisclaimer = async () => {
+    const mode = disclaimerMode;
+    if (!disclaimerChecked || !mode) return;
+    setDisclaimerMode(null);
+    if (mode === "lan") {
+      try {
+        const r = await call(POCKET_ENDPOINTS.lanSetEnabled, { on: true });
+        setStatus((s) => ({ ...s, lanEnabled: r.lanEnabled }));
+      } catch (err) {
+        setError(err.message);
+      }
+      return;
+    }
+    doStartTunnel(mode);
   };
   const stopTunnel = async () => {
     try {
@@ -2314,13 +2324,16 @@ function PocketSettingsTab({ rpcCall, adminRpcCall, t }) {
     }
   };
   const [lanToggleOpen, setLanToggleOpen] = (0, import_react2.useState)(null);
-  const requestLanToggle = (on) => setLanToggleOpen(on);
+  const requestLanToggle = (on) => {
+    if (on) {
+      setDisclaimerMode("lan");
+      setDisclaimerChecked(false);
+    } else setLanToggleOpen(false);
+  };
   const confirmLanToggle = async () => {
-    const on = lanToggleOpen;
     setLanToggleOpen(null);
-    if (on === null) return;
     try {
-      const r = await call(POCKET_ENDPOINTS.lanSetEnabled, { on });
+      const r = await call(POCKET_ENDPOINTS.lanSetEnabled, { on: false });
       setStatus((s) => ({ ...s, lanEnabled: r.lanEnabled }));
     } catch (err) {
       setError(err.message);
@@ -2657,15 +2670,15 @@ function PocketSettingsTab({ rpcCall, adminRpcCall, t }) {
     toast ? (0, import_react2.createElement)("div", {
       style: { position: "fixed", left: "50%", top: "50%", transform: "translate(-50%, -50%)", zIndex: 10001, width: "auto", maxWidth: 280, background: "rgba(17,24,39,.92)", color: "#fff", border: "none", borderRadius: 10, padding: "10px 16px", fontSize: 13, lineHeight: 1.5, textAlign: "center", boxShadow: "0 8px 24px rgba(0,0,0,.22)" }
     }, toast) : null,
-    // 局域网访问开关确认弹框（关闭/打开时弹窗提醒）
-    lanToggleOpen !== null ? (0, import_react2.createElement)(
+    // 局域网访问关闭确认弹框（开启方向走三通道声明弹窗）
+    lanToggleOpen === false ? (0, import_react2.createElement)(
       "div",
       { style: { position: "fixed", inset: 0, zIndex: 1e4, background: "rgba(0,0,0,.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 } },
       (0, import_react2.createElement)(
         "div",
         { style: { background: "var(--dsw-alias-bg-layer-1,#fff)", borderRadius: 12, maxWidth: 420, width: "100%", padding: "20px 22px", boxShadow: "0 8px 32px rgba(0,0,0,.18)" } },
-        (0, import_react2.createElement)("div", { style: { fontWeight: 600, fontSize: 15, color: lanToggleOpen ? "var(--dsw-alias-brand-primary,#4f6ef7)" : "var(--dsw-alias-state-warn-primary,#b45309)", marginBottom: 10 } }, t(lanToggleOpen ? "lanToggleTitleOn" : "lanToggleTitleOff")),
-        (0, import_react2.createElement)("div", { style: { fontSize: 13, lineHeight: 1.7, color: "var(--dsw-alias-label-primary,inherit)" } }, t(lanToggleOpen ? "lanToggleBodyOn" : "lanToggleBodyOff")),
+        (0, import_react2.createElement)("div", { style: { fontWeight: 600, fontSize: 15, color: "var(--dsw-alias-state-warn-primary,#b45309)", marginBottom: 10 } }, t("lanToggleTitleOff")),
+        (0, import_react2.createElement)("div", { style: { fontSize: 13, lineHeight: 1.7, color: "var(--dsw-alias-label-primary,inherit)" } }, t("lanToggleBodyOff")),
         (0, import_react2.createElement)(
           "div",
           { style: { display: "flex", gap: 8, marginTop: 16 } },
@@ -2674,15 +2687,15 @@ function PocketSettingsTab({ rpcCall, adminRpcCall, t }) {
         )
       )
     ) : null,
-    // 安全免责声明弹框（issue #31）：每次开启公网访问前确认
-    disclaimerOpen ? (0, import_react2.createElement)(
+    // 通道安全声明弹框：按即将开启的通道显示对应文案（lan/quick/named）
+    disclaimerMode ? (0, import_react2.createElement)(
       "div",
       { style: { position: "fixed", inset: 0, zIndex: 1e4, background: "rgba(0,0,0,.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 } },
       (0, import_react2.createElement)(
         "div",
         { style: { background: "var(--dsw-alias-bg-layer-1,#fff)", borderRadius: 12, maxWidth: 420, width: "100%", padding: "20px 22px", boxShadow: "0 8px 32px rgba(0,0,0,.18)" } },
-        (0, import_react2.createElement)("div", { style: { fontWeight: 600, fontSize: 15, color: "var(--dsw-alias-state-warn-primary,#b45309)", marginBottom: 10 } }, t("disclaimerTitle")),
-        (0, import_react2.createElement)("div", { style: { fontSize: 13, lineHeight: 1.7, color: "var(--dsw-alias-label-primary,inherit)" } }, t("disclaimerBody")),
+        (0, import_react2.createElement)("div", { style: { fontWeight: 600, fontSize: 15, color: "var(--dsw-alias-state-warn-primary,#b45309)", marginBottom: 10 } }, t(disclaimerMode === "lan" ? "lanDisclaimerTitle" : disclaimerMode === "named" ? "namedDisclaimerTitle" : "quickDisclaimerTitle")),
+        (0, import_react2.createElement)("div", { style: { fontSize: 13, lineHeight: 1.7, color: "var(--dsw-alias-label-primary,inherit)", whiteSpace: "pre-line" } }, t(disclaimerMode === "lan" ? "lanDisclaimerBody" : disclaimerMode === "named" ? "namedDisclaimerBody" : "quickDisclaimerBody")),
         (0, import_react2.createElement)(
           "label",
           { style: { display: "flex", alignItems: "center", gap: 8, marginTop: 14, fontSize: 13, cursor: "pointer" } },
@@ -2692,7 +2705,7 @@ function PocketSettingsTab({ rpcCall, adminRpcCall, t }) {
         (0, import_react2.createElement)(
           "div",
           { style: { display: "flex", gap: 8, marginTop: 16 } },
-          (0, import_react2.createElement)("button", { style: { ...styles.btn, flex: 1 }, onClick: () => setDisclaimerOpen(false) }, t("cancel")),
+          (0, import_react2.createElement)("button", { style: { ...styles.btn, flex: 1 }, onClick: () => setDisclaimerMode(null) }, t("cancel")),
           (0, import_react2.createElement)("button", {
             style: { ...styles.primary, flex: 1, opacity: disclaimerChecked ? 1 : 0.5 },
             disabled: !disclaimerChecked,
