@@ -19,9 +19,9 @@ async function withHome(fn) {
   }
 }
 
-test('局域网访问总开关默认开启（无配置文件）', () => withHome(async () => {
+test('局域网访问总开关默认关闭（无配置文件）', () => withHome(async () => {
   const { lanEnabled } = await import('../lib/settings.mjs');
-  assert.equal(lanEnabled(), true, '默认开启');
+  assert.equal(lanEnabled(), false, '默认关闭（三通道语义统一：默认关、手动开、开启必读声明）');
 }));
 
 test('局域网访问总开关：关闭 → 持久化到 settings.json，重新读取仍为关闭；可再开', () => withHome(async () => {
@@ -168,7 +168,7 @@ test('恢复出厂设置：清空全部设置 + 重设随机密码（开关回�
   assert.match(after.lanToken, /^\d{8}$/, '新局域网密码是 8 位随机');
 
   // 全部开关回到出厂默认
-  assert.equal(settings.lanEnabled(), true, '局域网访问恢复默认开');
+  assert.equal(settings.lanEnabled(), false, '局域网访问恢复默认关');
   assert.equal(settings.lanAuthEnabled(), true, '访问密码恢复默认开');
   assert.equal(settings.lanIpOverride(), '', '局域网地址恢复自动');
   assert.equal(settings.tunnelMode(), 'quick', '公网模式恢复随机域名');
