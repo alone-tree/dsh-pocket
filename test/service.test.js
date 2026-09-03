@@ -651,44 +651,65 @@ test('startProxy：端口被占（EADDRINUSE）时自动尝试下一个端口', 
   await service.dispose();
 });
 
-test('公网隧道自动恢复：开启时持久化标记，重启后 restoreTunnelIfNeeded 自动拉起（issue #11）', async () => {
+test('公网隧道自动恢复：Named 重启后自动拉起；Quick 只记录标记、每次需手动开启（issue #11）', async () => {
   const fsp = await import('node:fs/promises');
   const os = await import('node:os');
   const path = await import('node:path');
   const home = await fsp.mkdtemp(path.join(os.tmpdir(), 'dshp-auto-'));
 
-  let startCount = 0;
+  let namedStartCount = 0;
+  let quickStartCount = 0;
   const internals = {
     ...stubInternals(),
     startTunnel: async () => {
-      startCount += 1;
+      quickStartCount += 1;
       return { url: 'https://auto.trycloudflare.com', kill: () => {} };
     },
+    startNamedTunnel: async () => {
+      namedStartCount += 1;
+      return { url: null, kill: () => {}, onExit: () => {} };
+    },
   };
-  const service = createPocketService({ dshPort: 3080, port: 3081, home, internals });
-  await service.startProxy();
-
-  // 开启隧道 → 持久化标记（persistAutoTunnel 是异步 fire-and-forget，等它落盘）
-  await service.startTunnel();
-  await new Promise((r) => setTimeout(r, 60));
+  const namedCfg = () => ({ mode: 'named', token: 'faketoken', hostname: 'work.example.com' });
   const statePath = path.join(home, 'dsh-pocket', 'tunnel-auto.json');
-  assert.ok((await fsp.readFile(statePath, 'utf8')).includes('"at"'), '开启后写入标记');
 
-  // 模拟重启：新 service 实例（相同 home）→ 自动恢复
-  const service2 = createPocketService({ dshPort: 3080, port: 3081, home, internals });
-  await service2.startProxy();
-  await service2.restoreTunnelIfNeeded();
-  assert.equal(startCount, 2, '重启后自动拉起隧道');
+  // --- Named：开启 → 标记含 mode=named → 模拟重启自动恢复 ---
+  const namedService = createPocketService({ dshPort: 3080, port: 3081, home, internals, getTunnelConfig: namedCfg });
+  await namedService.startProxy();
+  await namedService.startTunnel();
+  await new Promise((r) => setTimeout(r, 60));
+  const namedMarker = JSON.parse(await fsp.readFile(statePath, 'utf8'));
+  assert.equal(namedMarker.mode, 'named', 'Named 标记记录通道');
 
-  // 手动关闭 → 标记清除 → 下次不自动恢复
-  service2.stopTunnel();
+  const namedService2 = createPocketService({ dshPort: 3080, port: 3081, home, internals, getTunnelConfig: namedCfg });
+  await namedService2.startProxy();
+  await namedService2.restoreTunnelIfNeeded();
+  assert.equal(namedStartCount, 2, 'Named 重启后自动拉起');
+
+  // 手动关闭 → 标记清除 → 不再自动恢复
+  namedService2.stopTunnel();
   await new Promise((r) => setTimeout(r, 30));
-  const afterClose = await fsp.readFile(statePath, 'utf8').catch(() => null);
-  assert.equal(afterClose, null, '关闭后删除标记');
-  const service3 = createPocketService({ dshPort: 3080, port: 3081, home, internals });
-  await service3.startProxy();
-  await service3.restoreTunnelIfNeeded();
-  assert.equal(startCount, 2, '无标记不自动恢复');
+  assert.equal(await fsp.readFile(statePath, 'utf8').catch(() => null), null, '关闭后删除标记');
+  const namedService3 = createPocketService({ dshPort: 3080, port: 3081, home, internals, getTunnelConfig: namedCfg });
+  await namedService3.startProxy();
+  await namedService3.restoreTunnelIfNeeded();
+  assert.equal(namedStartCount, 2, '无标记不自动恢复');
+
+  // --- Quick：开启写标记（mode=quick）→ 模拟重启不自动恢复 ---
+  const quickInternals = { ...stubInternals(), startTunnel: internals.startTunnel };
+  const quickService = createPocketService({ dshPort: 3080, port: 3081, home, internals: quickInternals });
+  await quickService.startProxy();
+  await quickService.startTunnel();
+  await new Promise((r) => setTimeout(r, 60));
+  const quickMarker = JSON.parse(await fsp.readFile(statePath, 'utf8'));
+  assert.equal(quickMarker.mode, 'quick', 'Quick 标记记录通道');
+  assert.equal(quickStartCount, 1, 'Quick 手动开启一次');
+
+  const quickService2 = createPocketService({ dshPort: 3080, port: 3081, home, internals: quickInternals });
+  await quickService2.startProxy();
+  await quickService2.restoreTunnelIfNeeded();
+  await new Promise((r) => setTimeout(r, 30));
+  assert.equal(quickStartCount, 1, 'Quick 重启后不自动恢复，需手动开启');
 
   await fsp.rm(home, { recursive: true, force: true });
 });
